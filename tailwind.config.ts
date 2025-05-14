@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,18 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				millionaire: {
+					primary: '#0B0F4D',      // Dark blue primary
+					secondary: '#0E58AA',    // Medium blue
+					accent: '#4E6FE2',       // Light blue accent
+					gold: '#E6B800',         // Gold for money
+					highlight: '#8BA7FF',    // Light blue highlight
+					correct: '#1F8B24',      // Green for correct answers
+					wrong: '#C81D1D',        // Red for wrong answers
+					dark: '#080B36',         // Darker blue for backgrounds
+					light: '#E3F4FF',        // Light color for text
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +96,32 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-glow': {
+					'0%, 100%': { 
+						opacity: '1',
+						boxShadow: '0 0 5px 2px rgba(139, 167, 255, 0.3)'
+					},
+					'50%': { 
+						opacity: '0.8',
+						boxShadow: '0 0 20px 10px rgba(139, 167, 255, 0.6)'
+					},
+				},
+				'fade-in': {
+					'0%': { opacity: '0', transform: 'translateY(10px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' },
+				},
+				'countdown': {
+					'0%': { width: '100%' },
+					'100%': { width: '0%' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-glow': 'pulse-glow 2s infinite',
+				'fade-in': 'fade-in 0.5s ease-out',
+				'countdown': 'countdown linear',
 			}
 		}
 	},
