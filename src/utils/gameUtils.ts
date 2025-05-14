@@ -1,4 +1,5 @@
 import { toast } from "@/hooks/use-toast";
+import { playSound as playSoundEffect } from "./soundUtils";
 
 export interface Question {
   id: string;
@@ -153,13 +154,13 @@ export function askTheAudience(question: Question): number[] {
 export function playSound(soundName: 'correct' | 'wrong' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline', settings: GameSettings): void {
   if (!settings.soundEffects) return;
   
-  // This would ideally connect to actual sound files
-  console.log(`Playing sound: ${soundName}`);
+  // Play the actual sound
+  playSoundEffect(soundName, settings.soundEffects);
   
-  // Simulate sound by showing a toast notification (for development)
+  // Also show a toast notification for visual feedback
   toast({
     title: `Sound Effect`,
-    description: `${soundName} sound would play here`,
+    description: `${soundName} sound playing`,
     duration: 1000,
   });
 }
