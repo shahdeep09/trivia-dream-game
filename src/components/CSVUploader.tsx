@@ -7,7 +7,7 @@ import { Question } from '@/utils/gameUtils';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Csv, Upload } from 'lucide-react';
+import { FileText, Upload } from 'lucide-react';
 import { Progress } from './ui/progress';
 
 interface CSVUploaderProps {
@@ -124,7 +124,7 @@ const CSVUploader = ({ onQuestionsImported }: CSVUploaderProps) => {
     <Card className="bg-millionaire-primary border-millionaire-accent mb-6">
       <CardHeader>
         <CardTitle className="text-millionaire-light flex items-center gap-2">
-          <Csv className="h-6 w-6" /> Import Questions from CSV
+          <FileText className="h-6 w-6" /> Import Questions from CSV
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
