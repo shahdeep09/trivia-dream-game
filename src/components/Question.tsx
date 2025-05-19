@@ -10,6 +10,7 @@ interface QuestionProps {
   settings: any;
   selectedOption: number | null;
   showResult: boolean;
+  onOptionSelect: () => void; // New prop to handle timer pausing
 }
 
 const Question = ({
@@ -20,19 +21,28 @@ const Question = ({
   settings,
   selectedOption,
   showResult,
+  onOptionSelect, // New prop for timer pause
 }: QuestionProps) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [suspensePlayed, setSuspensePlayed] = useState(false);
 
   useEffect(() => {
     setSelectedIndex(selectedOption);
-  }, [selectedOption]);
+    // Reset suspense played state when question changes
+    setSuspensePlayed(false);
+  }, [selectedOption, question]);
 
   const handleOptionClick = (index: number) => {
     if (selectedIndex !== null || disabledOptions.includes(index) || revealAnswer) return;
     
     setSelectedIndex(index);
+    onOptionSelect(); // Pause the timer
+    
     // Play suspense sound but don't submit answer yet
-    playSound("suspense", settings);
+    if (!suspensePlayed) {
+      playSound("suspense", settings);
+      setSuspensePlayed(true);
+    }
   };
 
   const confirmAnswer = () => {

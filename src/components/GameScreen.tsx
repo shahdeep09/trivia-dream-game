@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, MONEY_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions } from "@/utils/gameUtils";
 import Question from "./Question";
@@ -166,6 +165,10 @@ const GameScreen = ({
     setDialogOpen(true);
   };
 
+  const handleOptionSelect = () => {
+    setTimerPaused(true);
+  };
+
   if (!currentQuestion) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -231,6 +234,7 @@ const GameScreen = ({
             settings={settings}
             selectedOption={selectedOption}
             showResult={showResult}
+            onOptionSelect={handleOptionSelect}
           />
         </div>
         
