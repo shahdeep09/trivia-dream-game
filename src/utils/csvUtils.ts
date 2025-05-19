@@ -6,7 +6,7 @@ import { Question } from "./gameUtils";
  * Expected format:
  * - Column A: Question text
  * - Columns B-E: Options (4 options)
- * - Column F: Correct answer (should match one of the options)
+ * - Column F: Correct answer (can be either the full text or just A/B/C/D)
  */
 export const parseQuestionsFromCSV = (csvContent: string): Question[] => {
   // Split the CSV content into rows
@@ -23,7 +23,10 @@ export const parseQuestionsFromCSV = (csvContent: string): Question[] => {
     const columns = parseCSVRow(rows[i]);
     
     // Ensure we have all required columns
-    if (columns.length < 6) continue;
+    if (columns.length < 6) {
+      console.warn(`Row ${i+1} doesn't have enough columns. Skipping.`);
+      continue;
+    }
     
     const questionText = columns[0].trim();
     const options = [
@@ -35,13 +38,27 @@ export const parseQuestionsFromCSV = (csvContent: string): Question[] => {
     
     // Find the correct option index based on the value in column F
     const correctAnswerText = columns[5].trim();
-    const correctOptionIndex = options.findIndex(
+    let correctOptionIndex = -1;
+    
+    // Try to match by exact option text first
+    correctOptionIndex = options.findIndex(
       option => option.toLowerCase() === correctAnswerText.toLowerCase()
     );
     
-    // If we couldn't match the correct answer to an option, skip this row
+    // If exact match failed, check if it's an A/B/C/D format answer
     if (correctOptionIndex === -1) {
-      console.error(`Could not find the correct option "${correctAnswerText}" for question "${questionText}"`);
+      // Handle A, B, C, D format
+      if (/^[A-D]$/i.test(correctAnswerText)) {
+        const letterIndex = correctAnswerText.toUpperCase().charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
+        if (letterIndex >= 0 && letterIndex < options.length) {
+          correctOptionIndex = letterIndex;
+        }
+      }
+    }
+    
+    // If we still couldn't match the correct answer to an option, log and skip this row
+    if (correctOptionIndex === -1) {
+      console.error(`Could not find the correct option "${correctAnswerText}" for question "${questionText}". Available options:`, options);
       continue;
     }
     
@@ -65,7 +82,7 @@ export const parseQuestionsFromCSV = (csvContent: string): Question[] => {
     }
     
     parsedQuestions.push({
-      id: `q${Date.now()}-${parsedQuestions.length}`,
+      id: `q${Date.now()}-${i}`,
       text: questionText,
       options,
       correctOptionIndex,
