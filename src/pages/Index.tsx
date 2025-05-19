@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import GameScreen, { GameResult } from "@/components/GameScreen";
 import QuestionManager from "@/components/QuestionManager";
+import CSVUploader from "@/components/CSVUploader";
 import { Question, GameSettings, DEFAULT_GAME_SETTINGS } from "@/utils/gameUtils";
 import { SAMPLE_QUESTIONS } from "@/data/questions";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -82,6 +84,11 @@ const Index = () => {
       setQuestions(SAMPLE_QUESTIONS);
     }
   };
+
+  const handleQuestionsImported = (importedQuestions: Question[]) => {
+    // Replace current questions with imported ones
+    setQuestions(importedQuestions);
+  };
   
   return (
     <div className="min-h-screen bg-millionaire-dark text-millionaire-light">
@@ -136,13 +143,37 @@ const Index = () => {
             </Button>
           </div>
           
-          <QuestionManager
-            questions={questions}
-            onAddQuestion={handleAddQuestion}
-            onUpdateQuestion={handleUpdateQuestion}
-            onDeleteQuestion={handleDeleteQuestion}
-            onStartGame={handleStartGame}
-          />
+          <Tabs defaultValue="manager" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="manager">Question Manager</TabsTrigger>
+              <TabsTrigger value="upload">CSV Upload</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="manager">
+              <QuestionManager
+                questions={questions}
+                onAddQuestion={handleAddQuestion}
+                onUpdateQuestion={handleUpdateQuestion}
+                onDeleteQuestion={handleDeleteQuestion}
+                onStartGame={handleStartGame}
+              />
+            </TabsContent>
+            
+            <TabsContent value="upload">
+              <div className="w-full max-w-4xl mx-auto">
+                <CSVUploader onQuestionsImported={handleQuestionsImported} />
+                
+                <div className="flex justify-center mt-6">
+                  <Button
+                    onClick={handleStartGame}
+                    className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary px-8 py-6 text-xl"
+                  >
+                    Start Game
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       )}
       
