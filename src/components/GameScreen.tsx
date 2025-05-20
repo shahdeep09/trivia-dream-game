@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, MONEY_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions } from "@/utils/gameUtils";
 import Question from "./Question";
 import MoneyLadder from "./MoneyLadder";
-import Timer from "./Timer";
 import Lifeline from "./Lifeline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -235,15 +234,10 @@ const GameScreen = ({
             selectedOption={selectedOption}
             showResult={showResult}
             onOptionSelect={handleOptionSelect}
+            onTimeUp={handleTimeUp}
+            timerPaused={timerPaused}
           />
         </div>
-        
-        <Timer
-          isActive={!gameOver && !revealAnswer}
-          onTimeUp={handleTimeUp}
-          settings={settings}
-          isPaused={timerPaused}
-        />
       </div>
       
       {/* Decision Dialog */}

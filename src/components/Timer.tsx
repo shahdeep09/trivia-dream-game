@@ -11,13 +11,11 @@ interface TimerProps {
 
 const Timer = ({ isActive, onTimeUp, settings, isPaused = false }: TimerProps) => {
   const [timeLeft, setTimeLeft] = useState(settings.timePerQuestion);
-  const [animationDuration, setAnimationDuration] = useState(`${settings.timePerQuestion}s`);
 
   useEffect(() => {
     // Reset timer when question changes
     if (isActive) {
       setTimeLeft(settings.timePerQuestion);
-      setAnimationDuration(`${settings.timePerQuestion}s`);
     }
   }, [isActive, settings.timePerQuestion]);
 
@@ -42,30 +40,13 @@ const Timer = ({ isActive, onTimeUp, settings, isPaused = false }: TimerProps) =
     };
   }, [isActive, isPaused, timeLeft, onTimeUp]);
 
-  // Calculate timer color based on time left
-  const getTimerColor = () => {
-    const percentage = timeLeft / settings.timePerQuestion;
-    if (percentage > 0.6) return "bg-green-500";
-    if (percentage > 0.3) return "bg-yellow-500";
-    return "bg-red-500";
-  };
-
   return (
-    <div className="w-full mt-4">
-      <div className="flex justify-between mb-1">
-        <span className="text-sm font-medium text-millionaire-light">Time left</span>
-        <span className="text-sm font-medium text-millionaire-light">
-          {timeLeft} seconds
+    <div className="flex justify-center">
+      <div className="w-24 h-24 rounded-full border-4 border-millionaire-accent bg-millionaire-primary flex items-center justify-center">
+        <span className="text-2xl font-bold text-millionaire-gold">
+          {/* Display in 50:50 format as shown in your reference */}
+          {Math.floor(timeLeft / 60)}:{timeLeft % 60 < 10 ? '0' : ''}{timeLeft % 60}
         </span>
-      </div>
-      <div className="w-full bg-gray-700 rounded-full h-2.5">
-        <div
-          className={`${getTimerColor()} h-2.5 rounded-full`}
-          style={{
-            width: isActive && !isPaused ? `${(timeLeft / settings.timePerQuestion) * 100}%` : '100%',
-            transition: 'width 1s linear'
-          }}
-        ></div>
       </div>
     </div>
   );

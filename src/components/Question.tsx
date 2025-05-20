@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Question as QuestionType, playSound } from "@/utils/gameUtils";
+import Timer from "./Timer";
 
 interface QuestionProps {
   question: QuestionType;
@@ -10,7 +11,9 @@ interface QuestionProps {
   settings: any;
   selectedOption: number | null;
   showResult: boolean;
-  onOptionSelect: () => void; // New prop to handle timer pausing
+  onOptionSelect: () => void;
+  onTimeUp: () => void;
+  timerPaused: boolean;
 }
 
 const Question = ({
@@ -21,7 +24,9 @@ const Question = ({
   settings,
   selectedOption,
   showResult,
-  onOptionSelect, // New prop for timer pause
+  onOptionSelect,
+  onTimeUp,
+  timerPaused,
 }: QuestionProps) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [suspensePlayed, setSuspensePlayed] = useState(false);
@@ -84,7 +89,7 @@ const Question = ({
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {question.options.map((option, index) => (
           <button
             key={index}
@@ -98,6 +103,16 @@ const Question = ({
             <span className="flex-1 text-left">{option}</span>
           </button>
         ))}
+      </div>
+
+      {/* Timer positioned below questions */}
+      <div className="mb-6">
+        <Timer
+          isActive={!revealAnswer}
+          onTimeUp={onTimeUp}
+          settings={settings}
+          isPaused={timerPaused}
+        />
       </div>
 
       {selectedIndex !== null && !revealAnswer && (
