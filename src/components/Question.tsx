@@ -1,19 +1,26 @@
 
 import { useState, useEffect } from "react";
-import { Question as QuestionType, playSound } from "@/utils/gameUtils";
+import { Question as QuestionType, playSound, GameSettings } from "@/utils/gameUtils";
 import Timer from "./Timer";
+import Lifeline from "./Lifeline";
 
 interface QuestionProps {
   question: QuestionType;
   onAnswer: (selectedIndex: number) => void;
   revealAnswer: boolean;
   disabledOptions: number[];
-  settings: any;
+  settings: GameSettings;
   selectedOption: number | null;
   showResult: boolean;
   onOptionSelect: () => void;
   onTimeUp: () => void;
   timerPaused: boolean;
+  lifelinesUsed: {
+    "fifty-fifty": boolean;
+    "phone-friend": boolean;
+    "ask-audience": boolean;
+  };
+  onUseLifeline: (type: "fifty-fifty" | "phone-friend" | "ask-audience", result: any) => void;
 }
 
 const Question = ({
@@ -27,6 +34,8 @@ const Question = ({
   onOptionSelect,
   onTimeUp,
   timerPaused,
+  lifelinesUsed,
+  onUseLifeline,
 }: QuestionProps) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [suspensePlayed, setSuspensePlayed] = useState(false);
@@ -112,6 +121,31 @@ const Question = ({
           onTimeUp={onTimeUp}
           settings={settings}
           isPaused={timerPaused}
+        />
+      </div>
+
+      {/* Lifelines positioned under the timer */}
+      <div className="flex justify-center mb-6 gap-6">
+        <Lifeline
+          type="fifty-fifty"
+          isUsed={lifelinesUsed["fifty-fifty"]}
+          onUse={onUseLifeline}
+          currentQuestion={question}
+          settings={settings}
+        />
+        <Lifeline
+          type="phone-friend"
+          isUsed={lifelinesUsed["phone-friend"]}
+          onUse={onUseLifeline}
+          currentQuestion={question}
+          settings={settings}
+        />
+        <Lifeline
+          type="ask-audience"
+          isUsed={lifelinesUsed["ask-audience"]}
+          onUse={onUseLifeline}
+          currentQuestion={question}
+          settings={settings}
         />
       </div>
 

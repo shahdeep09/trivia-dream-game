@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { GameSettings, Question, applyFiftyFifty, phoneAFriend, askTheAudience } from "@/utils/gameUtils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -33,7 +32,7 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
     switch (type) {
       case "fifty-fifty":
         return (
-          <div className="text-xs text-center">
+          <div className="text-lg text-center">
             <span className="block">50</span>
             <span className="block">50</span>
           </div>
@@ -125,13 +124,13 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
   return (
     <>
       <button
-        className={`lifeline-button ${isUsed ? "opacity-50" : "animate-pulse-glow"}`}
+        className={`w-24 h-24 rounded-full border-4 border-millionaire-accent bg-millionaire-primary flex flex-col items-center justify-center ${isUsed ? "opacity-50" : "animate-pulse-glow"}`}
         onClick={handleUseLifeline}
         disabled={isUsed}
         title={getLifelineName()}
       >
-        <span className="text-xl">{getLifelineIcon()}</span>
-        <span className="text-xs mt-1 whitespace-nowrap overflow-hidden text-ellipsis w-full text-center">
+        <span className="text-2xl mb-1">{getLifelineIcon()}</span>
+        <span className="text-sm mt-1 whitespace-nowrap overflow-hidden text-ellipsis w-full text-center">
           {getLifelineName()}
         </span>
       </button>

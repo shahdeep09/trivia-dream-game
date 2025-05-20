@@ -180,32 +180,8 @@ const GameScreen = ({
   return (
     <div className="flex flex-col md:flex-row h-screen bg-millionaire-dark text-millionaire-light p-4 md:p-8 gap-4 overflow-hidden">
       {/* Left side - Money Ladder */}
-      <div className="md:w-1/4 flex flex-col justify-between">
+      <div className="md:w-1/4">
         <MoneyLadder currentLevel={currentQuestionIndex} />
-        
-        <div className="mt-4 flex flex-row md:flex-col gap-4 justify-center">
-          <Lifeline
-            type="fifty-fifty"
-            isUsed={lifelinesUsed["fifty-fifty"]}
-            onUse={handleUseLifeline}
-            currentQuestion={currentQuestion}
-            settings={settings}
-          />
-          <Lifeline
-            type="phone-friend"
-            isUsed={lifelinesUsed["phone-friend"]}
-            onUse={handleUseLifeline}
-            currentQuestion={currentQuestion}
-            settings={settings}
-          />
-          <Lifeline
-            type="ask-audience"
-            isUsed={lifelinesUsed["ask-audience"]}
-            onUse={handleUseLifeline}
-            currentQuestion={currentQuestion}
-            settings={settings}
-          />
-        </div>
       </div>
       
       {/* Main Game Area */}
@@ -236,6 +212,8 @@ const GameScreen = ({
             onOptionSelect={handleOptionSelect}
             onTimeUp={handleTimeUp}
             timerPaused={timerPaused}
+            lifelinesUsed={lifelinesUsed}
+            onUseLifeline={handleUseLifeline}
           />
         </div>
       </div>
