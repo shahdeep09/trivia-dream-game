@@ -92,6 +92,15 @@ const Question = ({
 
   return (
     <div className="w-full max-w-2xl mx-auto">
+      {/* Crorepati Logo */}
+      <div className="flex justify-center mb-6">
+        <img 
+          src="/lovable-uploads/53c30491-2339-4371-b7b0-b77acda033a4.png" 
+          alt="Kaun Banega Crorepati Logo" 
+          className="w-48 h-48 object-contain"
+        />
+      </div>
+
       <div className="bg-millionaire-primary p-6 rounded-lg border border-millionaire-highlight mb-6 shadow-lg animate-fade-in hexagon">
         <h2 className="text-xl md:text-2xl text-center text-millionaire-light font-medium mb-2">
           {question.text}
