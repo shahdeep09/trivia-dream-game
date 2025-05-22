@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team } from "@/utils/gameUtils";
 import Question from "./Question";
@@ -12,20 +11,22 @@ interface GameScreenProps {
   settings?: GameSettings;
   onGameEnd: (result: GameResult) => void;
   onBackToAdmin: () => void;
+  teamId?: string | null;
 }
 
 export interface GameResult {
   totalWon: number;
   questionLevel: number;
   isWinner: boolean;
-  teamId?: string;
+  teamId?: string | null;
 }
 
 const GameScreen = ({
   questions,
   settings = DEFAULT_GAME_SETTINGS,
   onGameEnd,
-  onBackToAdmin
+  onBackToAdmin,
+  teamId
 }: GameScreenProps) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [gameQuestions, setGameQuestions] = useState<QuestionType[]>([]);
@@ -40,8 +41,6 @@ const GameScreen = ({
   const [dialogMessage, setDialogMessage] = useState("");
   const [timerPaused, setTimerPaused] = useState(false);
   const [searchParams] = useSearchParams();
-  const teamId = searchParams.get('team');
-  const navigate = useNavigate();
   
   // Lifelines
   const [lifelinesUsed, setLifelinesUsed] = useState({
