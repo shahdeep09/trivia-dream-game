@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team } from "@/utils/gameUtils";
 import Question from "./Question";
@@ -41,6 +42,7 @@ const GameScreen = ({
   const [dialogMessage, setDialogMessage] = useState("");
   const [timerPaused, setTimerPaused] = useState(false);
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   
   // Lifelines
   const [lifelinesUsed, setLifelinesUsed] = useState({
@@ -196,6 +198,11 @@ const GameScreen = ({
     setTimerPaused(true);
   };
 
+  // Toggle timer pause state
+  const toggleTimerPause = () => {
+    setTimerPaused(!timerPaused);
+  };
+
   // Get the current team name if a team is playing
   const getCurrentTeamName = (): string => {
     if (!teamId) return "";
@@ -239,14 +246,23 @@ const GameScreen = ({
           <div className="text-millionaire-gold font-bold text-2xl">
             {formatMoney(currentQuestion.value)}
           </div>
-          <Button
-            variant="outline"
-            className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary"
-            onClick={handleWalkAway}
-            disabled={gameOver}
-          >
-            Walk Away
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent"
+              onClick={toggleTimerPause}
+            >
+              {timerPaused ? "Resume Timer" : "Pause Timer"}
+            </Button>
+            <Button
+              variant="outline"
+              className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary"
+              onClick={handleWalkAway}
+              disabled={gameOver}
+            >
+              Walk Away
+            </Button>
+          </div>
         </div>
         
         <div className="flex-1 flex flex-col justify-center">
