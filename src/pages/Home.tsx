@@ -42,7 +42,7 @@ const Home = () => {
             asChild
             className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
           >
-            <Link to="/">Play Game</Link>
+            <Link to="/game">Play Game</Link>
           </Button>
         </div>
         
@@ -75,7 +75,7 @@ const Home = () => {
                         asChild
                         className="bg-millionaire-accent hover:bg-millionaire-gold text-millionaire-primary"
                       >
-                        <Link to={`/?team=${team.id}`}>Play</Link>
+                        <Link to={`/game?team=${team.id}&tab=upload`}>Play</Link>
                       </Button>
                     </div>
                   </CardContent>

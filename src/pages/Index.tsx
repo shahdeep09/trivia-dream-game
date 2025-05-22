@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import GameScreen, { GameResult } from "@/components/GameScreen";
 import QuestionManager from "@/components/QuestionManager";
 import CSVUploader from "@/components/CSVUploader";
@@ -21,6 +21,10 @@ const Index = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const teamId = queryParams.get("team");
+  const initialTab = queryParams.get("tab") || "manager";
   
   // Load saved questions from localStorage on initial render
   useEffect(() => {
@@ -101,6 +105,7 @@ const Index = () => {
           settings={gameSettings}
           onGameEnd={handleGameEnd}
           onBackToAdmin={handleBackToAdmin}
+          teamId={teamId}
         />
       ) : (
         <div className="container mx-auto px-4 py-8">
@@ -108,7 +113,7 @@ const Index = () => {
             <div>
               <h1 className="text-4xl font-bold text-millionaire-gold">Who Wants to Be a Millionaire</h1>
               <p className="text-millionaire-light mt-2">
-                Question Manager
+                Question Manager {teamId ? `- Playing as Team ${teamId}` : ""}
               </p>
             </div>
             <div className="flex space-x-4">
@@ -157,7 +162,7 @@ const Index = () => {
             </Button>
           </div>
           
-          <Tabs defaultValue="manager" className="w-full">
+          <Tabs defaultValue={initialTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="manager">Question Manager</TabsTrigger>
               <TabsTrigger value="upload">CSV Upload</TabsTrigger>
