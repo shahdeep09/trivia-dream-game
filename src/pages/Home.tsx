@@ -7,6 +7,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Trophy, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
 
 const Home = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -17,7 +19,12 @@ const Home = () => {
     if (savedTeams) {
       setTeams(JSON.parse(savedTeams));
     } else {
-      setTeams(SAMPLE_TEAMS);
+      // Initialize teams with bonus points if they don't have it
+      const teamsWithBonus = SAMPLE_TEAMS.map(team => ({
+        ...team,
+        bonusPoints: team.bonusPoints || 0
+      }));
+      setTeams(teamsWithBonus);
     }
   }, []);
   
@@ -27,6 +34,30 @@ const Home = () => {
       localStorage.setItem("millionaire-teams", JSON.stringify(teams));
     }
   }, [teams]);
+
+  // Handle bonus points change
+  const handleBonusPointsChange = (teamId: string, value: string) => {
+    const numValue = parseInt(value) || 0;
+    
+    setTeams(prevTeams => 
+      prevTeams.map(team => 
+        team.id === teamId ? { ...team, bonusPoints: numValue } : team
+      )
+    );
+  };
+
+  // Calculate total points (game points + bonus points)
+  const calculateTotalPoints = (team: Team) => {
+    return team.points + (team.bonusPoints || 0);
+  };
+
+  // Save bonus points for a team
+  const saveBonusPoints = (teamId: string) => {
+    toast({
+      title: "Bonus Points Saved",
+      description: "The bonus points have been updated for this team.",
+    });
+  };
   
   return (
     <div className="min-h-screen bg-millionaire-dark text-millionaire-light">
@@ -68,7 +99,9 @@ const Home = () => {
                   <CardContent>
                     <div className="flex justify-between items-center">
                       <div>
-                        <p><span className="font-medium">Total Points:</span> {team.points}</p>
+                        <p><span className="font-medium">Game Points:</span> {team.points}</p>
+                        <p><span className="font-medium">Bonus Points:</span> {team.bonusPoints || 0}</p>
+                        <p><span className="font-medium">Total Points:</span> {calculateTotalPoints(team)}</p>
                         <p><span className="font-medium">Games Played:</span> {team.gamesPlayed}</p>
                       </div>
                       <Button
@@ -95,19 +128,43 @@ const Home = () => {
                     <TableRow className="bg-millionaire-primary">
                       <TableHead className="text-millionaire-gold">Rank</TableHead>
                       <TableHead className="text-millionaire-gold">Team</TableHead>
-                      <TableHead className="text-millionaire-gold">Points</TableHead>
+                      <TableHead className="text-millionaire-gold">Game Points</TableHead>
+                      <TableHead className="text-millionaire-gold">Bonus Points</TableHead>
+                      <TableHead className="text-millionaire-gold">Total Points</TableHead>
                       <TableHead className="text-millionaire-gold">Games Played</TableHead>
+                      <TableHead className="text-millionaire-gold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {teams
-                      .sort((a, b) => b.points - a.points)
+                      .sort((a, b) => calculateTotalPoints(b) - calculateTotalPoints(a))
                       .map((team, index) => (
                         <TableRow key={team.id} className="border-b border-millionaire-accent">
                           <TableCell className="font-medium">{index + 1}</TableCell>
                           <TableCell>{team.name}</TableCell>
                           <TableCell>{team.points}</TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min="0"
+                              className="w-20 bg-millionaire-primary text-millionaire-gold border-millionaire-accent"
+                              value={team.bonusPoints || 0}
+                              onChange={(e) => handleBonusPointsChange(team.id, e.target.value)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-bold text-millionaire-gold">
+                            {calculateTotalPoints(team)}
+                          </TableCell>
                           <TableCell>{team.gamesPlayed}</TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              className="bg-millionaire-accent hover:bg-millionaire-gold text-millionaire-primary"
+                              onClick={() => saveBonusPoints(team.id)}
+                            >
+                              Save
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                   </TableBody>

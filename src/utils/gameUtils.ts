@@ -16,6 +16,7 @@ export interface Team {
   name: string;
   points: number;
   gamesPlayed: number;
+  bonusPoints?: number;
 }
 
 export interface GameSettings {
