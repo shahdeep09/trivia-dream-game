@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
-import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, MONEY_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions } from "@/utils/gameUtils";
+import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team } from "@/utils/gameUtils";
 import Question from "./Question";
 import MoneyLadder from "./MoneyLadder";
-import Lifeline from "./Lifeline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface GameScreenProps {
   questions: QuestionType[];
@@ -17,6 +18,7 @@ export interface GameResult {
   totalWon: number;
   questionLevel: number;
   isWinner: boolean;
+  teamId?: string;
 }
 
 const GameScreen = ({
@@ -37,6 +39,9 @@ const GameScreen = ({
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
   const [dialogMessage, setDialogMessage] = useState("");
   const [timerPaused, setTimerPaused] = useState(false);
+  const [searchParams] = useSearchParams();
+  const teamId = searchParams.get('team');
+  const navigate = useNavigate();
   
   // Lifelines
   const [lifelinesUsed, setLifelinesUsed] = useState({
@@ -148,11 +153,35 @@ const GameScreen = ({
   
   const handleGameEnd = () => {
     setResultDialogOpen(false);
+
+    // Update team score if a team is playing
+    if (teamId) {
+      const savedTeams = localStorage.getItem("millionaire-teams");
+      if (savedTeams) {
+        const teams: Team[] = JSON.parse(savedTeams);
+        const updatedTeams = teams.map(team => {
+          if (team.id === teamId) {
+            return {
+              ...team,
+              points: team.points + moneyWon,
+              gamesPlayed: team.gamesPlayed + 1
+            };
+          }
+          return team;
+        });
+        localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
+      }
+    }
+    
     onGameEnd({
       totalWon: moneyWon,
       questionLevel: currentQuestionIndex + 1,
       isWinner: gameWon,
+      teamId
     });
+    
+    // Navigate back to home page
+    navigate('/');
   };
 
   const handleWalkAway = () => {
@@ -168,6 +197,21 @@ const GameScreen = ({
     setTimerPaused(true);
   };
 
+  // Get the current team name if a team is playing
+  const getCurrentTeamName = (): string => {
+    if (!teamId) return "";
+    
+    const savedTeams = localStorage.getItem("millionaire-teams");
+    if (savedTeams) {
+      const teams: Team[] = JSON.parse(savedTeams);
+      const team = teams.find(t => t.id === teamId);
+      return team ? team.name : "";
+    }
+    return "";
+  };
+
+  const teamName = getCurrentTeamName();
+
   if (!currentQuestion) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -181,6 +225,12 @@ const GameScreen = ({
     <div className="flex flex-col md:flex-row h-screen bg-millionaire-dark text-millionaire-light p-4 md:p-8 gap-4 overflow-hidden">
       {/* Left side - Money Ladder */}
       <div className="md:w-1/4">
+        {teamName && (
+          <div className="bg-millionaire-secondary p-4 rounded-lg mb-4 text-center">
+            <h3 className="text-millionaire-gold font-bold">Team Playing:</h3>
+            <p className="text-lg">{teamName}</p>
+          </div>
+        )}
         <MoneyLadder currentLevel={currentQuestionIndex} />
       </div>
       
@@ -270,17 +320,17 @@ const GameScreen = ({
             
             <div className="flex justify-center space-x-4">
               <Button
-                onClick={onBackToAdmin}
+                onClick={() => navigate('/')}
                 variant="outline"
                 className="border-millionaire-accent"
               >
-                Manage Questions
+                Back to Home
               </Button>
               <Button
                 onClick={handleGameEnd}
                 className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
               >
-                Play Again
+                Save Results
               </Button>
             </div>
           </div>

@@ -11,6 +11,13 @@ export interface Question {
   difficulty?: 'easy' | 'medium' | 'hard';
 }
 
+export interface Team {
+  id: string;
+  name: string;
+  points: number;
+  gamesPlayed: number;
+}
+
 export interface GameSettings {
   timePerQuestion: number;
   soundEffects: boolean;
@@ -31,12 +38,26 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   }
 };
 
-// Money ladder values in order (smallest to largest)
-export const MONEY_VALUES = [
+// Sample teams data
+export const SAMPLE_TEAMS: Team[] = [
+  { id: "1", name: "Brilliant Minds", points: 0, gamesPlayed: 0 },
+  { id: "2", name: "Quiz Masters", points: 0, gamesPlayed: 0 },
+  { id: "3", name: "Knowledge Warriors", points: 0, gamesPlayed: 0 },
+  { id: "4", name: "Brain Busters", points: 0, gamesPlayed: 0 },
+  { id: "5", name: "Trivia Titans", points: 0, gamesPlayed: 0 },
+  { id: "6", name: "Cerebral Challengers", points: 0, gamesPlayed: 0 },
+  { id: "7", name: "Whiz Kids", points: 0, gamesPlayed: 0 },
+  { id: "8", name: "Intellectual Giants", points: 0, gamesPlayed: 0 },
+  { id: "9", name: "Genius Junction", points: 0, gamesPlayed: 0 },
+  { id: "10", name: "Smart Sharks", points: 0, gamesPlayed: 0 },
+];
+
+// Money ladder values in order (smallest to largest) - renamed to POINTS_VALUES
+export const POINTS_VALUES = [
   100, 200, 300, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 125000, 250000, 500000, 1000000
 ];
 
-// Milestone values (guaranteed money)
+// Milestone values (guaranteed money) - renamed to MILESTONE_POINTS
 export const MILESTONE_VALUES = [1000, 32000, 1000000];
 
 // Shuffle options for a question while preserving the correct answer
@@ -61,17 +82,16 @@ export function shuffleOptions(question: Question): Question {
   };
 }
 
-// Get a formatted money string
+// Get a formatted money string - renamed to formatPoints
 export function formatMoney(amount: number): string {
   return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+    style: 'decimal',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
-  }).format(amount);
+  }).format(amount) + " points";
 }
 
-// Get the guaranteed money amount based on current level
+// Get the guaranteed money amount based on current level - renamed to getGuaranteedPoints
 export function getGuaranteedMoney(currentLevel: number): number {
   if (currentLevel < 5) return 0;
   if (currentLevel < 10) return 1000;

@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import GameScreen, { GameResult } from "@/components/GameScreen";
 import QuestionManager from "@/components/QuestionManager";
 import CSVUploader from "@/components/CSVUploader";
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft } from "lucide-react";
 
 const Index = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -18,6 +20,7 @@ const Index = () => {
   const [gameSettings, setGameSettings] = useState<GameSettings>(DEFAULT_GAME_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
+  const navigate = useNavigate();
   
   // Load saved questions from localStorage on initial render
   useEffect(() => {
@@ -108,13 +111,25 @@ const Index = () => {
                 Question Manager
               </p>
             </div>
-            <Button
-              onClick={() => setSettingsOpen(true)}
-              variant="outline"
-              className="border-millionaire-accent"
-            >
-              Game Settings
-            </Button>
+            <div className="flex space-x-4">
+              <Button
+                asChild
+                variant="outline"
+                className="border-millionaire-accent flex items-center gap-2"
+              >
+                <Link to="/">
+                  <ArrowLeft size={16} />
+                  Back to Teams
+                </Link>
+              </Button>
+              <Button
+                onClick={() => setSettingsOpen(true)}
+                variant="outline"
+                className="border-millionaire-accent"
+              >
+                Game Settings
+              </Button>
+            </div>
           </div>
           
           {/* Game result display */}
@@ -123,12 +138,11 @@ const Index = () => {
               <h2 className="text-xl font-bold mb-2">Last Game Result</h2>
               <p>
                 {gameResult.isWinner
-                  ? "Congratulations! You won the million!"
+                  ? "Congratulations! You won the million points!"
                   : `You reached question #${gameResult.questionLevel} and won ${new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: "USD",
+                      style: "decimal",
                       minimumFractionDigits: 0,
-                    }).format(gameResult.totalWon)}`}
+                    }).format(gameResult.totalWon)} points`}
               </p>
             </div>
           )}
