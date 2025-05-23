@@ -1,11 +1,13 @@
-
 import { useState, useEffect } from "react";
-import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team } from "@/utils/gameUtils";
+import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team, GameAction, addGameAction, undoLastAction } from "@/utils/gameUtils";
 import Question from "./Question";
 import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Undo } from "lucide-react"; // Import Undo icon
+import Confetti from "react-confetti"; // We'll need to install this package
+import { useWindowSize } from "@/hooks/use-window-size"; // Custom hook for window size
 
 interface GameScreenProps {
   questions: QuestionType[];
@@ -41,8 +43,11 @@ const GameScreen = ({
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
   const [dialogMessage, setDialogMessage] = useState("");
   const [timerPaused, setTimerPaused] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const windowSize = useWindowSize();
   
   // Lifelines
   const [lifelinesUsed, setLifelinesUsed] = useState({
@@ -51,6 +56,9 @@ const GameScreen = ({
     "ask-audience": false,
   });
   const [disabledOptions, setDisabledOptions] = useState<number[]>([]);
+  
+  // Action history for undo functionality
+  const [actionHistory, setActionHistory] = useState<GameAction[]>([]);
   
   // Prepare questions when game starts
   useEffect(() => {
@@ -74,13 +82,24 @@ const GameScreen = ({
     setShowResult(true);
     setTimerPaused(true);
     
+    // Add answer action to history
+    const answerAction: GameAction = {
+      type: 'ANSWER',
+      data: { selectedIndex, questionIndex: currentQuestionIndex }
+    };
+    setActionHistory([...actionHistory, answerAction]);
+    
     const isCorrect = selectedIndex === currentQuestion.correctOptionIndex;
     
     if (isCorrect) {
-      // Play correct answer sound
-      playSound("correct", settings);
+      // Play the appropriate sound based on question level
+      if (currentQuestionIndex < 5) {
+        playSound("fast-forward", settings, currentQuestionIndex);
+      } else {
+        playSound("correct", settings);
+      }
       
-      // Update money won
+      // Update money won - always get points for correct answers regardless of question number
       setMoneyWon(currentQuestion.value);
       
       // Wait a moment and then show dialog
@@ -90,9 +109,15 @@ const GameScreen = ({
           setGameWon(true);
           setGameOver(true);
           playSound("win", settings);
+          setShowConfetti(true); // Show confetti for winning on the last question
           setDialogMessage(`Congratulations! You've won ${formatMoney(currentQuestion.value)}!`);
         } else {
           setDialogMessage(`Correct! You now have ${formatMoney(currentQuestion.value)}`);
+          
+          // Check if we should show explanation
+          if (currentQuestion.explanation) {
+            setShowExplanation(true);
+          }
         }
         setDialogOpen(true);
       }, 2000);
@@ -100,15 +125,21 @@ const GameScreen = ({
       // Play wrong answer sound
       playSound("wrong", settings);
       
-      // Game over - set guaranteed money
-      const guaranteedMoney = getGuaranteedMoney(currentQuestionIndex);
+      // Game over - set earned money
+      const earnedMoney = moneyWon; // Just keep what they've earned
       setTimeout(() => {
         setGameOver(true);
         setDialogMessage(
           `Sorry, that's incorrect. The correct answer was ${currentQuestion.options[currentQuestion.correctOptionIndex]}.
-          You leave with ${formatMoney(guaranteedMoney)}`
+          You leave with ${formatMoney(earnedMoney)}`
         );
-        setMoneyWon(guaranteedMoney);
+        setMoneyWon(earnedMoney);
+        
+        // Check if we should show explanation
+        if (currentQuestion.explanation) {
+          setShowExplanation(true);
+        }
+        
         setDialogOpen(true);
       }, 2000);
     }
@@ -116,6 +147,7 @@ const GameScreen = ({
 
   const handleNextQuestion = () => {
     setDialogOpen(false);
+    setShowExplanation(false);
     
     if (gameOver) {
       setResultDialogOpen(true);
@@ -134,13 +166,19 @@ const GameScreen = ({
 
   const handleTimeUp = () => {
     setGameOver(true);
-    const guaranteedMoney = getGuaranteedMoney(currentQuestionIndex);
-    setMoneyWon(guaranteedMoney);
+    // You get to keep what you've earned
     setDialogMessage(
       `Time's up! You ran out of time.
-      You leave with ${formatMoney(guaranteedMoney)}`
+      You leave with ${formatMoney(moneyWon)}`
     );
     setDialogOpen(true);
+    
+    // Add timeout action to history
+    const timeoutAction: GameAction = {
+      type: 'ANSWER',
+      data: { timeout: true, questionIndex: currentQuestionIndex }
+    };
+    setActionHistory([...actionHistory, timeoutAction]);
   };
 
   const handleUseLifeline = (type: "fifty-fifty" | "phone-friend" | "ask-audience", result: any) => {
@@ -150,10 +188,18 @@ const GameScreen = ({
     if (type === "fifty-fifty") {
       setDisabledOptions(result);
     }
+    
+    // Add lifeline action to history
+    const lifelineAction: GameAction = {
+      type: 'LIFELINE',
+      data: { type, result }
+    };
+    setActionHistory([...actionHistory, lifelineAction]);
   };
   
   const handleGameEnd = () => {
     setResultDialogOpen(false);
+    setShowConfetti(false);
 
     // Update team score if a team is playing
     if (teamId) {
@@ -192,6 +238,13 @@ const GameScreen = ({
        The correct answer was ${currentQuestion.options[currentQuestion.correctOptionIndex]}.`
     );
     setDialogOpen(true);
+    
+    // Add walk away action to history
+    const walkAwayAction: GameAction = {
+      type: 'WALK_AWAY',
+      data: { moneyWon, questionIndex: currentQuestionIndex }
+    };
+    setActionHistory([...actionHistory, walkAwayAction]);
   };
 
   const handleOptionSelect = () => {
@@ -201,6 +254,42 @@ const GameScreen = ({
   // Toggle timer pause state
   const toggleTimerPause = () => {
     setTimerPaused(!timerPaused);
+    // If we're un-pausing and we're in the first 5 questions, resume fast-forward sound
+    if (!timerPaused && currentQuestionIndex < 5) {
+      playSound("fast-forward", settings, currentQuestionIndex);
+    }
+  };
+
+  // Undo last action
+  const handleUndo = () => {
+    if (actionHistory.length === 0) return;
+    
+    const lastAction = [...actionHistory].pop();
+    setActionHistory(actionHistory.slice(0, -1));
+    
+    if (lastAction) {
+      switch (lastAction.type) {
+        case 'LIFELINE':
+          // Undo lifeline usage
+          const { type } = lastAction.data;
+          setLifelinesUsed({ ...lifelinesUsed, [type]: false });
+          if (type === "fifty-fifty") {
+            setDisabledOptions([]);
+          }
+          break;
+          
+        case 'ANSWER':
+          // Can't really undo an answer, but we can reset the game state
+          // This would be more complex to implement fully
+          break;
+          
+        case 'WALK_AWAY':
+          // Reset game state
+          setGameOver(false);
+          setDialogOpen(false);
+          break;
+      }
+    }
   };
 
   // Get the current team name if a team is playing
@@ -228,7 +317,17 @@ const GameScreen = ({
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-millionaire-dark text-millionaire-light p-4 md:p-8 gap-4 overflow-hidden">
+    <div className="flex flex-col md:flex-row h-screen bg-millionaire-dark text-millionaire-light p-4 md:p-8 gap-4 overflow-hidden relative">
+      {/* Confetti overlay - only shown when winning the last question */}
+      {showConfetti && (
+        <Confetti
+          width={windowSize.width || 0}
+          height={windowSize.height || 0}
+          recycle={false}
+          numberOfPieces={500}
+        />
+      )}
+      
       {/* Left side - Money Ladder */}
       <div className="md:w-1/4">
         {teamName && (
@@ -247,6 +346,15 @@ const GameScreen = ({
             {formatMoney(currentQuestion.value)}
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent flex items-center gap-1"
+              onClick={handleUndo}
+              disabled={actionHistory.length === 0}
+            >
+              <Undo size={16} />
+              Undo
+            </Button>
             <Button
               variant="outline"
               className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent"
@@ -292,6 +400,15 @@ const GameScreen = ({
               {dialogMessage}
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Show explanation if available */}
+          {showExplanation && currentQuestion.explanation && (
+            <div className="mt-4 p-4 bg-millionaire-secondary rounded-md">
+              <h3 className="font-bold text-millionaire-gold mb-2">Explanation:</h3>
+              <p className="text-millionaire-light">{currentQuestion.explanation}</p>
+            </div>
+          )}
+          
           <DialogFooter>
             <Button
               onClick={handleNextQuestion}

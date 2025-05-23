@@ -9,6 +9,7 @@ export interface Question {
   value: number;
   category?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
+  explanation?: string; // New field for answer explanation
 }
 
 export interface Team {
@@ -53,7 +54,7 @@ export const SAMPLE_TEAMS: Team[] = [
   { id: "10", name: "Smart Sharks", points: 0, gamesPlayed: 0 },
 ];
 
-// Money ladder values in order (smallest to largest) - renamed to POINTS_VALUES
+// Money ladder values in order (smallest to largest)
 export const POINTS_VALUES = [
   100, 200, 300, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 125000, 250000, 500000, 1000000
 ];
@@ -83,7 +84,7 @@ export function shuffleOptions(question: Question): Question {
   };
 }
 
-// Get a formatted money string - renamed to formatPoints
+// Get a formatted money string
 export function formatMoney(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'decimal',
@@ -92,12 +93,10 @@ export function formatMoney(amount: number): string {
   }).format(amount) + " points";
 }
 
-// Get the guaranteed money amount based on current level - renamed to getGuaranteedPoints
+// Get the guaranteed money amount based on current level - modified to remove stage logic
 export function getGuaranteedMoney(currentLevel: number): number {
-  if (currentLevel < 5) return 0;
-  if (currentLevel < 10) return 1000;
-  if (currentLevel < 15) return 32000;
-  return 1000000;
+  // Modified to always return earned points, not milestone points
+  return POINTS_VALUES[currentLevel];
 }
 
 // Apply the 50:50 lifeline to a question
@@ -171,11 +170,28 @@ export function askTheAudience(question: Question): number[] {
   return percentages;
 }
 
-// Play a sound effect
-export function playSound(soundName: 'correct' | 'wrong' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline', settings: GameSettings): void {
+// Enhanced play sound function with fast-forward logic
+export function playSound(
+  soundName: 'correct' | 'wrong' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline' | 'fast-forward',
+  settings: GameSettings,
+  questionLevel?: number
+): void {
   if (!settings.soundEffects) return;
   
-  // Play the actual sound
+  // If we're within the first 5 questions and the sound is 'correct', use fast-forward instead
+  if (questionLevel !== undefined && questionLevel < 5 && soundName === 'correct') {
+    playSoundEffect('fast-forward', settings.soundEffects);
+    
+    // Also show a toast notification for visual feedback
+    toast({
+      title: `Sound Effect`,
+      description: `fast-forward sound playing`,
+      duration: 1000,
+    });
+    return;
+  }
+  
+  // For all other cases, play the requested sound
   playSoundEffect(soundName, settings.soundEffects);
   
   // Also show a toast notification for visual feedback
@@ -184,4 +200,23 @@ export function playSound(soundName: 'correct' | 'wrong' | 'final-answer' | 'let
     description: `${soundName} sound playing`,
     duration: 1000,
   });
+}
+
+// New function to undo the last action (for history tracking)
+export interface GameAction {
+  type: 'ANSWER' | 'LIFELINE' | 'WALK_AWAY';
+  data: any;
+}
+
+// Track the action history
+export const gameActionHistory: GameAction[] = [];
+
+// Add an action to history
+export function addGameAction(action: GameAction): void {
+  gameActionHistory.push(action);
+}
+
+// Pop the last action from history
+export function undoLastAction(): GameAction | undefined {
+  return gameActionHistory.pop();
 }

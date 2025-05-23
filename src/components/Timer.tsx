@@ -46,7 +46,6 @@ const Timer = ({ isActive, onTimeUp, settings, isPaused = false }: TimerProps) =
     <div className="flex flex-col items-center">
       <div className="w-24 h-24 rounded-full border-4 border-millionaire-accent bg-millionaire-primary flex items-center justify-center">
         <span className="text-2xl font-bold text-millionaire-gold">
-          {/* Display in 50:50 format as shown in your reference */}
           {Math.floor(timeLeft / 60)}:{timeLeft % 60 < 10 ? '0' : ''}{timeLeft % 60}
         </span>
       </div>

@@ -7,6 +7,7 @@ import { Question } from "./gameUtils";
  * - Column A: Question text
  * - Columns B-E: Options (4 options)
  * - Column F: Correct answer (can be either the full text or just A/B/C/D)
+ * - Column G: Explanation (optional)
  */
 export const parseQuestionsFromCSV = (csvContent: string): Question[] => {
   // Split the CSV content into rows
@@ -62,6 +63,9 @@ export const parseQuestionsFromCSV = (csvContent: string): Question[] => {
       continue;
     }
     
+    // Extract explanation if available (Column G)
+    const explanation = columns.length > 6 ? columns[6].trim() : undefined;
+    
     // Determine difficulty and value based on the question number in the set
     // We'll distribute difficulties evenly across the 15 questions in a set
     const questionPositionInSet = (parsedQuestions.length % 15) + 1;
@@ -87,7 +91,8 @@ export const parseQuestionsFromCSV = (csvContent: string): Question[] => {
       options,
       correctOptionIndex,
       value,
-      difficulty
+      difficulty,
+      explanation
     });
   }
   

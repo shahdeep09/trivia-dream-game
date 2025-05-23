@@ -74,7 +74,7 @@ const Question = ({
     }
     
     if (selectedIndex === index) {
-      className += " selected";
+      className += " selected bg-yellow-500"; // Changed to yellow background for selected option
     }
     
     if (showResult && revealAnswer) {
