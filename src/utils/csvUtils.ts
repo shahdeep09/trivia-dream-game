@@ -8,8 +8,6 @@ import { Question } from "./gameUtils";
  * - Columns B-E: Options (4 options)
  * - Column F: Correct answer (can be either the full text or just A/B/C/D)
  * - Column G: Explanation (optional)
- * 
- * Supports Unicode characters including Hindi and Gujarati fonts
  */
 export const parseQuestionsFromCSV = (csvContent: string): Question[] => {
   // Split the CSV content into rows
@@ -59,21 +57,6 @@ export const parseQuestionsFromCSV = (csvContent: string): Question[] => {
       }
     }
     
-    // If we still couldn't find the correct answer, try a relaxed match with Unicode support
-    if (correctOptionIndex === -1) {
-      // Try a more relaxed comparison for non-Latin scripts (Hindi/Gujarati)
-      for (let j = 0; j < options.length; j++) {
-        // Remove whitespace and do a basic comparison
-        const cleanOption = options[j].replace(/\s+/g, '');
-        const cleanAnswer = correctAnswerText.replace(/\s+/g, '');
-        
-        if (cleanOption === cleanAnswer) {
-          correctOptionIndex = j;
-          break;
-        }
-      }
-    }
-    
     // If we still couldn't match the correct answer to an option, log and skip this row
     if (correctOptionIndex === -1) {
       console.error(`Could not find the correct option "${correctAnswerText}" for question "${questionText}". Available options:`, options);
@@ -118,7 +101,6 @@ export const parseQuestionsFromCSV = (csvContent: string): Question[] => {
 
 /**
  * Parse a CSV row into columns, handling cases where text is quoted
- * Enhanced to properly handle Unicode characters including Hindi and Gujarati
  */
 function parseCSVRow(row: string): string[] {
   const result = [];

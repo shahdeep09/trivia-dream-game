@@ -52,9 +52,7 @@
   }
 
   body {
-    @apply bg-millionaire-dark text-millionaire-light font-sans;
-    /* Add support for Hindi/Gujarati fonts */
-    font-family: 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Gujarati', system-ui, -apple-system, sans-serif;
+    @apply bg-millionaire-dark text-millionaire-light;
   }
 }
 
