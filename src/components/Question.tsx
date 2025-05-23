@@ -4,6 +4,7 @@ import { Question as QuestionType, playSound, GameSettings } from "@/utils/gameU
 import Timer from "./Timer";
 import Lifeline from "./Lifeline";
 import { useWindowSize } from "@/hooks/use-window-size";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
 interface QuestionProps {
   question: QuestionType;
@@ -102,7 +103,7 @@ const Question = ({
       </div>
 
       <div className="bg-millionaire-primary p-6 rounded-lg border border-millionaire-highlight mb-6 shadow-lg animate-fade-in hexagon">
-        <h2 className="text-2xl md:text-3xl text-center text-millionaire-light font-medium mb-2">
+        <h2 className="text-3xl md:text-4xl text-center text-millionaire-light font-medium mb-2">
           {question.text}
         </h2>
       </div>
@@ -118,7 +119,7 @@ const Question = ({
             <span className="w-8 h-8 flex items-center justify-center rounded-full bg-millionaire-accent mr-3">
               {optionLabels[index]}
             </span>
-            <span className="flex-1 text-left text-lg">{option}</span>
+            <span className="flex-1 text-left text-xl">{option}</span>
           </button>
         ))}
       </div>
