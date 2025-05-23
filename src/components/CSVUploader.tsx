@@ -42,7 +42,8 @@ const CSVUploader = ({ onQuestionsImported }: CSVUploaderProps) => {
         // Update progress
         setUploadProgress(Math.round((i / files.length) * 100));
         
-        const fileContent = await file.text();
+        // Read file as UTF-8 to properly handle Hindi and Gujarati characters
+        const fileContent = await readFileAsText(file);
         const questions = parseQuestionsFromCSV(fileContent);
         
         // Only add the set if it has questions
@@ -95,6 +96,23 @@ const CSVUploader = ({ onQuestionsImported }: CSVUploaderProps) => {
       // Reset the input to allow uploading the same file again
       event.target.value = '';
     }
+  };
+  
+  // Helper function to read file as text with UTF-8 encoding
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          resolve(event.target.result as string);
+        } else {
+          reject(new Error("Failed to read file content"));
+        }
+      };
+      reader.onerror = () => reject(new Error("Error reading file"));
+      // Use readAsText with UTF-8 encoding to properly handle Hindi/Gujarati text
+      reader.readAsText(file, 'UTF-8');
+    });
   };
   
   const handleUseSelectedSet = () => {
@@ -152,6 +170,7 @@ const CSVUploader = ({ onQuestionsImported }: CSVUploaderProps) => {
               </span>
               <span className="text-xs text-gray-400">
                 You can upload multiple CSV files at once, each containing a set of 15 questions.
+                <br />Supports Hindi and Gujarati text.
               </span>
             </label>
           </div>
