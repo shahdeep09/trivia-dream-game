@@ -1,3 +1,4 @@
+
 // Sound utility functions for the game
 
 // Sound file mapping
@@ -9,7 +10,7 @@ const SOUNDS: Record<string, HTMLAudioElement> = {
   'suspense': new Audio('/sounds/suspense.mp3'),
   'win': new Audio('/sounds/win.mp3'),
   'lifeline': new Audio('/sounds/lifeline.mp3'),
-  'fast-forward': new Audio('/sounds/fast-forward.mp3'), // New fast-forward sound
+  'fast-forward': new Audio('/sounds/fast-forward.mp3'), // Fast-forward sound
 };
 
 // Fallback using Web Audio API when files aren't available
@@ -22,7 +23,7 @@ const fallbackSounds: Record<string, (duration: number) => void> = {
   'suspense': createBeepSound(300, 1.0),
   'win': createTriumphSound(),
   'lifeline': createBeepSound(500, 0.4),
-  'fast-forward': createFastForwardSound(), // New fallback fast-forward sound
+  'fast-forward': createFastForwardSound(), // Fast-forward sound fallback
 };
 
 // Store active oscillators for sounds that need to be stopped
@@ -124,7 +125,7 @@ function createFastForwardSound() {
           oscillator.start();
           
           // Store the oscillator for potential stopping
-          activeOscillators.fast-forward.push(oscillator);
+          activeOscillators['fast-forward'].push(oscillator);
           
           setTimeout(() => {
             oscillator.stop();
@@ -194,60 +195,11 @@ export const stopFastForwardSound = (): void => {
   activeOscillators['fast-forward'] = [];
 };
 
-// Play a sound effect - updated with fast-forward support
+// Play a sound effect - now with sounds disabled
 export const playSound = (
   soundName: 'correct' | 'wrong' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline' | 'fast-forward', 
   soundEnabled: boolean
 ): void => {
-  if (!soundEnabled) return;
-  
-  // For final-answer, correct or wrong answers, stop any playing suspense or fast-forward sound
-  if (soundName === 'final-answer' || soundName === 'correct' || soundName === 'wrong') {
-    stopSuspenseSound();
-    stopFastForwardSound();
-  }
-  
-  // For suspense, loop the sound if possible
-  if (soundName === 'suspense') {
-    const sound = SOUNDS[soundName];
-    if (sound) {
-      sound.loop = true;
-    }
-  }
-  
-  // For fast-forward, also loop the sound
-  if (soundName === 'fast-forward') {
-    const sound = SOUNDS[soundName];
-    if (sound) {
-      sound.loop = true;
-    }
-  }
-  
-  const sound = SOUNDS[soundName];
-  if (sound) {
-    // Try to play the actual sound file
-    sound.pause();
-    sound.currentTime = 0;
-    
-    sound.play()
-      .then(() => {
-        // Sound played successfully
-      })
-      .catch(error => {
-        console.warn(`Audio file for ${soundName} couldn't be played, using fallback sound:`, error);
-        // If the audio file doesn't exist or can't be played, use the fallback sound
-        if (fallbackSounds[soundName]) {
-          // For suspense or fast-forward, loop the sound by playing it repeatedly
-          if (soundName === 'suspense' || soundName === 'fast-forward') {
-            const loopSound = () => {
-              fallbackSounds[soundName](3.0);
-              setTimeout(loopSound, 3000);
-            };
-            loopSound();
-          } else {
-            fallbackSounds[soundName](0.5);
-          }
-        }
-      });
-  }
+  // All sounds are disabled as per user's request
+  return;
 };

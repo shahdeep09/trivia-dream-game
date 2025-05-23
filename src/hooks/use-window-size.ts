@@ -7,9 +7,10 @@ interface WindowSize {
 }
 
 export function useWindowSize(): WindowSize {
+  // Initialize with undefined to avoid hydration mismatch
   const [windowSize, setWindowSize] = useState<WindowSize>({
-    width: undefined,
-    height: undefined,
+    width: typeof window !== 'undefined' ? window.innerWidth : undefined,
+    height: typeof window !== 'undefined' ? window.innerHeight : undefined,
   });
 
   useEffect(() => {

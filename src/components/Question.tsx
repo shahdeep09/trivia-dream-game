@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Question as QuestionType, playSound, GameSettings } from "@/utils/gameUtils";
 import Timer from "./Timer";
 import Lifeline from "./Lifeline";
+import { useWindowSize } from "@/hooks/use-window-size";
 
 interface QuestionProps {
   question: QuestionType;
@@ -39,7 +40,8 @@ const Question = ({
 }: QuestionProps) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [suspensePlayed, setSuspensePlayed] = useState(false);
-
+  const windowSize = useWindowSize();
+  
   useEffect(() => {
     setSelectedIndex(selectedOption);
     // Reset suspense played state when question changes
@@ -52,16 +54,11 @@ const Question = ({
     setSelectedIndex(index);
     onOptionSelect(); // Pause the timer
     
-    // Play suspense sound but don't submit answer yet
-    if (!suspensePlayed) {
-      playSound("suspense", settings);
-      setSuspensePlayed(true);
-    }
+    // Suspense sound logic removed as requested
   };
 
   const confirmAnswer = () => {
     if (selectedIndex !== null) {
-      playSound("final-answer", settings);
       onAnswer(selectedIndex);
     }
   };
@@ -74,7 +71,7 @@ const Question = ({
     }
     
     if (selectedIndex === index) {
-      className += " selected bg-yellow-500"; // Changed to yellow background for selected option
+      className += " selected bg-yellow-500"; // Yellow background for selected option
     }
     
     if (showResult && revealAnswer) {
@@ -90,19 +87,22 @@ const Question = ({
 
   const optionLabels = ["A", "B", "C", "D"];
 
+  // Calculate if content needs scrolling based on window size
+  const needsScrolling = windowSize.height ? windowSize.height < 700 : false;
+
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className={`w-full max-w-2xl mx-auto ${needsScrolling ? 'overflow-y-auto max-h-[80vh]' : ''}`}>
       {/* Crorepati Logo */}
       <div className="flex justify-center mb-6">
         <img 
           src="/lovable-uploads/53c30491-2339-4371-b7b0-b77acda033a4.png" 
           alt="Kaun Banega Crorepati Logo" 
-          className="w-48 h-48 object-contain"
+          className="w-40 h-40 object-contain"
         />
       </div>
 
       <div className="bg-millionaire-primary p-6 rounded-lg border border-millionaire-highlight mb-6 shadow-lg animate-fade-in hexagon">
-        <h2 className="text-xl md:text-2xl text-center text-millionaire-light font-medium mb-2">
+        <h2 className="text-2xl md:text-3xl text-center text-millionaire-light font-medium mb-2">
           {question.text}
         </h2>
       </div>
@@ -118,13 +118,13 @@ const Question = ({
             <span className="w-8 h-8 flex items-center justify-center rounded-full bg-millionaire-accent mr-3">
               {optionLabels[index]}
             </span>
-            <span className="flex-1 text-left">{option}</span>
+            <span className="flex-1 text-left text-lg">{option}</span>
           </button>
         ))}
       </div>
 
       {/* Timer positioned below questions */}
-      <div className="mb-6">
+      <div className="mb-6 flex justify-center">
         <Timer
           isActive={!revealAnswer}
           onTimeUp={onTimeUp}
