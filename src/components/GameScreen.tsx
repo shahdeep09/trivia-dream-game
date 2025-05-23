@@ -8,6 +8,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Undo } from "lucide-react"; // Import Undo icon
 import Confetti from "react-confetti"; // We'll need to install this package
 import { useWindowSize } from "@/hooks/use-window-size"; // Custom hook for window size
+import { ScrollArea } from "./ui/scroll-area";
 
 interface GameScreenProps {
   questions: QuestionType[];
@@ -328,19 +329,21 @@ const GameScreen = ({
         />
       )}
       
-      {/* Left side - Money Ladder */}
-      <div className="md:w-1/4">
-        {teamName && (
-          <div className="bg-millionaire-secondary p-4 rounded-lg mb-4 text-center">
-            <h3 className="text-millionaire-gold font-bold">Team Playing:</h3>
-            <p className="text-lg">{teamName}</p>
-          </div>
-        )}
-        <MoneyLadder currentLevel={currentQuestionIndex} />
+      {/* Left side - Money Ladder with ScrollArea for smaller screens */}
+      <div className="md:w-1/4 h-full">
+        <ScrollArea className="h-full">
+          {teamName && (
+            <div className="bg-millionaire-secondary p-4 rounded-lg mb-4 text-center">
+              <h3 className="text-millionaire-gold font-bold">Team Playing:</h3>
+              <p className="text-lg">{teamName}</p>
+            </div>
+          )}
+          <MoneyLadder currentLevel={currentQuestionIndex} />
+        </ScrollArea>
       </div>
       
-      {/* Main Game Area */}
-      <div className="md:w-3/4 flex flex-col">
+      {/* Main Game Area - Make this area scrollable on small screens */}
+      <div className="md:w-3/4 flex flex-col h-full overflow-hidden">
         <div className="flex justify-between items-center mb-4">
           <div className="text-millionaire-gold font-bold text-2xl">
             {formatMoney(currentQuestion.value)}
@@ -373,7 +376,7 @@ const GameScreen = ({
           </div>
         </div>
         
-        <div className="flex-1 flex flex-col justify-center">
+        <div className="flex-1 flex flex-col justify-center overflow-hidden">
           <Question
             question={currentQuestion}
             onAnswer={handleAnswer}
