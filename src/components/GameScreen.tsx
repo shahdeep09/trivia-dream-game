@@ -318,7 +318,7 @@ const GameScreen = ({
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-millionaire-dark text-millionaire-light p-4 md:p-8 gap-4 overflow-hidden relative">
+    <div className="flex flex-col h-screen bg-millionaire-dark text-millionaire-light overflow-hidden">
       {/* Confetti overlay - only shown when winning the last question */}
       {showConfetti && (
         <Confetti
@@ -329,54 +329,60 @@ const GameScreen = ({
         />
       )}
       
-      {/* Left side - Money Ladder */}
-      <div className="md:w-1/4 overflow-hidden">
-        {teamName && (
-          <div className="bg-millionaire-secondary p-4 rounded-lg mb-4 text-center">
-            <h3 className="text-millionaire-gold font-bold">Team Playing:</h3>
-            <p className="text-lg">{teamName}</p>
-          </div>
-        )}
-        <ScrollArea className="h-[calc(100vh-180px)]">
-          <MoneyLadder currentLevel={currentQuestionIndex} />
-        </ScrollArea>
-      </div>
-      
-      {/* Main Game Area - Removed the extra space by ensuring content fills available width */}
-      <div className="md:w-3/4 flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <div className="text-millionaire-gold font-bold text-2xl">
-            {formatMoney(currentQuestion.value)}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent flex items-center gap-1"
-              onClick={handleUndo}
-              disabled={actionHistory.length === 0}
-            >
-              <Undo size={16} />
-              Undo
-            </Button>
-            <Button
-              variant="outline"
-              className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent"
-              onClick={toggleTimerPause}
-            >
-              {timerPaused ? "Resume Timer" : "Pause Timer"}
-            </Button>
-            <Button
-              variant="outline"
-              className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary"
-              onClick={handleWalkAway}
-              disabled={gameOver}
-            >
-              Walk Away
-            </Button>
-          </div>
+      {/* Control bar */}
+      <div className="flex justify-between items-center p-4 bg-millionaire-primary border-b border-millionaire-accent">
+        <div className="text-millionaire-gold font-bold text-2xl">
+          {formatMoney(currentQuestion.value)}
         </div>
         
-        <div className="flex-1 flex flex-col justify-center w-full">
+        {teamName && (
+          <div className="bg-millionaire-secondary px-4 py-2 rounded-lg text-center">
+            <span className="text-millionaire-gold font-bold mr-2">Team:</span>
+            <span>{teamName}</span>
+          </div>
+        )}
+        
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent flex items-center gap-1"
+            onClick={handleUndo}
+            disabled={actionHistory.length === 0}
+          >
+            <Undo size={16} />
+            Undo
+          </Button>
+          <Button
+            variant="outline"
+            className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent"
+            onClick={toggleTimerPause}
+          >
+            {timerPaused ? "Resume Timer" : "Pause Timer"}
+          </Button>
+          <Button
+            variant="outline"
+            className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary"
+            onClick={handleWalkAway}
+            disabled={gameOver}
+          >
+            Walk Away
+          </Button>
+        </div>
+      </div>
+      
+      {/* Main content area - Full height and scrollable */}
+      <div className="flex flex-col md:flex-row h-full overflow-hidden">
+        {/* Money ladder - Collapsible on mobile */}
+        <div className="md:w-1/4 bg-millionaire-primary border-r border-millionaire-accent overflow-hidden">
+          <ScrollArea className="h-[calc(100vh-64px)]">
+            <div className="p-4">
+              <MoneyLadder currentLevel={currentQuestionIndex} />
+            </div>
+          </ScrollArea>
+        </div>
+        
+        {/* Question area - Full width */}
+        <div className="md:w-3/4 flex-grow flex flex-col items-center justify-center p-4">
           <Question
             question={currentQuestion}
             onAnswer={handleAnswer}

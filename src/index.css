@@ -63,6 +63,18 @@
     clip-path: polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
   }
   
+  /* New hexagon shapes for the design */
+  .hexagon-question {
+    clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
+    background-color: #1a237e;
+    border-color: #ffc107;
+  }
+  
+  .hexagon-option {
+    clip-path: polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%);
+    background-color: #1a237e;
+  }
+  
   .option-button {
     @apply relative flex items-center bg-millionaire-primary text-millionaire-light w-full
            p-3 my-2 border border-millionaire-highlight rounded-md
