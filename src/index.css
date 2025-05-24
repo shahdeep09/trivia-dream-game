@@ -140,12 +140,12 @@
   
   .lifeline-button {
     @apply flex flex-col items-center justify-center p-2 rounded-full
-           bg-millionaire-primary border border-millionaire-highlight
-           w-16 h-16 transition-all duration-300;
+           bg-millionaire-primary border border-millionaire-accent
+           w-14 h-14 transition-colors;
   }
   
   .lifeline-button:hover:not(:disabled) {
-    @apply bg-millionaire-secondary transform scale-110;
+    @apply bg-millionaire-secondary;
   }
   
   .lifeline-button:disabled {
