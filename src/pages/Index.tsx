@@ -165,7 +165,7 @@ const Index = () => {
           <Tabs defaultValue={initialTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="manager">Question Manager</TabsTrigger>
-              <TabsTrigger value="upload">CSV Upload</TabsTrigger>
+              <TabsTrigger value="upload">File Upload</TabsTrigger>
             </TabsList>
             
             <TabsContent value="manager">

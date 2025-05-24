@@ -9,6 +9,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { FileText, Upload } from 'lucide-react';
 import { Progress } from './ui/progress';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface CSVUploaderProps {
   onQuestionsImported: (questions: Question[]) => void;
@@ -36,26 +37,45 @@ const CSVUploader = ({ onQuestionsImported }: CSVUploaderProps) => {
       // Process files sequentially to provide better progress indication
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const fileName = file.name.replace('.csv', '');
+        // Extract filename without extension for both .csv and .xlsx files
+        const fileName = file.name.replace(/\.(csv|xlsx?)$/i, '');
         setProcessingMessage(`Processing ${fileName} (${i+1}/${files.length})`);
         
         // Update progress
         setUploadProgress(Math.round((i / files.length) * 100));
         
-        // Read file as UTF-8 to properly handle Hindi and Gujarati characters
-        const fileContent = await readFileAsText(file);
-        const questions = parseQuestionsFromCSV(fileContent);
-        
-        // Only add the set if it has questions
-        if (questions.length > 0) {
-          newQuestionSets[fileName] = questions;
-          loadedSetsCount++;
-          
-          // Log success details
-          console.log(`Successfully loaded "${fileName}" with ${questions.length} questions`);
-        } else {
+        try {
+          // Check if we're dealing with an Excel file
+          if (file.name.match(/\.xlsx?$/i)) {
+            // For Excel files, we need to convert to CSV first
+            const fileContent = await convertExcelToCSV(file);
+            const questions = parseQuestionsFromCSV(fileContent);
+
+            if (questions.length > 0) {
+              newQuestionSets[fileName] = questions;
+              loadedSetsCount++;
+              console.log(`Successfully loaded Excel file "${fileName}" with ${questions.length} questions`);
+            } else {
+              totalErrors++;
+              console.error(`Failed to extract any questions from Excel file ${fileName}`);
+            }
+          } else {
+            // For CSV files, read as UTF-8 to handle Hindi and Gujarati characters
+            const fileContent = await readFileAsText(file);
+            const questions = parseQuestionsFromCSV(fileContent);
+
+            if (questions.length > 0) {
+              newQuestionSets[fileName] = questions;
+              loadedSetsCount++;
+              console.log(`Successfully loaded "${fileName}" with ${questions.length} questions`);
+            } else {
+              totalErrors++;
+              console.error(`Failed to extract any questions from ${fileName}`);
+            }
+          }
+        } catch (err) {
           totalErrors++;
-          console.error(`Failed to extract any questions from ${fileName}`);
+          console.error(`Error processing file ${file.name}:`, err);
         }
       }
       
@@ -65,7 +85,7 @@ const CSVUploader = ({ onQuestionsImported }: CSVUploaderProps) => {
       // Show appropriate toast based on results
       if (loadedSetsCount > 0) {
         toast({
-          title: "CSV Import Complete",
+          title: "File Import Complete",
           description: `Successfully loaded ${loadedSetsCount} question sets.${totalErrors > 0 ? ` (${totalErrors} files had errors)` : ''}`,
         });
         
@@ -76,17 +96,17 @@ const CSVUploader = ({ onQuestionsImported }: CSVUploaderProps) => {
         }
       } else {
         toast({
-          title: "CSV Import Failed",
+          title: "Import Failed",
           description: "Could not extract any questions from the uploaded files. Check the format.",
           variant: "destructive",
         });
       }
       
     } catch (error) {
-      console.error("Error processing CSV files:", error);
+      console.error("Error processing files:", error);
       toast({
         title: "Import Error",
-        description: "There was an error processing the CSV files. Please check the format.",
+        description: "There was an error processing the files. Please check the format.",
         variant: "destructive",
       });
     } finally {
@@ -96,6 +116,37 @@ const CSVUploader = ({ onQuestionsImported }: CSVUploaderProps) => {
       // Reset the input to allow uploading the same file again
       event.target.value = '';
     }
+  };
+  
+  // Helper function to convert Excel to CSV format
+  const convertExcelToCSV = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          if (!e.target?.result) {
+            reject(new Error("Failed to read Excel file"));
+            return;
+          }
+          
+          const data = new Uint8Array(e.target.result as ArrayBuffer);
+          // Use SheetJS to parse Excel file
+          const workbook = XLSX.read(data, { type: 'array' });
+          
+          // Get first worksheet
+          const worksheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[worksheetName];
+          
+          // Convert to CSV
+          const csvContent = XLSX.utils.sheet_to_csv(worksheet);
+          resolve(csvContent);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = () => reject(new Error("Error reading Excel file"));
+      reader.readAsArrayBuffer(file);
+    });
   };
   
   // Helper function to read file as text with UTF-8 encoding
@@ -142,35 +193,35 @@ const CSVUploader = ({ onQuestionsImported }: CSVUploaderProps) => {
     <Card className="bg-millionaire-primary border-millionaire-accent mb-6">
       <CardHeader>
         <CardTitle className="text-millionaire-light flex items-center gap-2">
-          <FileText className="h-6 w-6" /> Import Questions from CSV
+          <FileText className="h-6 w-6" /> Import Questions from File
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="csv-upload" className="text-millionaire-light">
-            Upload CSV Files (Column A: Question, B-E: Options, F: Correct Answer as A/B/C/D or full text)
+          <Label htmlFor="file-upload" className="text-millionaire-light">
+            Upload CSV or Excel Files (Column A: Question, B-E: Options, F: Correct Answer as A/B/C/D or full text)
           </Label>
           <div className="border-2 border-dashed border-millionaire-accent rounded-lg p-4 text-center">
             <input
-              id="csv-upload"
+              id="file-upload"
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls"
               multiple
               onChange={handleFileUpload}
               className="hidden"
               disabled={isLoading}
             />
             <label 
-              htmlFor="csv-upload" 
+              htmlFor="file-upload" 
               className="cursor-pointer flex flex-col items-center justify-center space-y-2"
             >
               <Upload className="h-8 w-8 text-millionaire-light" />
               <span className="text-millionaire-light">
-                {isLoading ? 'Uploading...' : 'Click to upload CSV files'}
+                {isLoading ? 'Uploading...' : 'Click to upload CSV or Excel files'}
               </span>
               <span className="text-xs text-gray-400">
-                You can upload multiple CSV files at once, each containing a set of 15 questions.
-                <br />Supports Hindi and Gujarati text.
+                You can upload multiple files at once, each containing a set of 15 questions.
+                <br />Supports .csv, .xls, .xlsx formats and Unicode text (Hindi/Gujarati).
               </span>
             </label>
           </div>
@@ -189,21 +240,23 @@ const CSVUploader = ({ onQuestionsImported }: CSVUploaderProps) => {
               <Label htmlFor="question-set" className="text-millionaire-light">
                 Select Question Set ({Object.keys(questionSets).length} sets available)
               </Label>
-              <Select
-                value={selectedSet || ''}
-                onValueChange={setSelectedSet}
-              >
-                <SelectTrigger className="w-full bg-millionaire-secondary">
-                  <SelectValue placeholder="Select a question set" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.keys(questionSets).map((setName) => (
-                    <SelectItem key={setName} value={setName}>
-                      {setName} ({questionSets[setName].length} questions)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ScrollArea className="max-h-40">
+                <Select
+                  value={selectedSet || ''}
+                  onValueChange={setSelectedSet}
+                >
+                  <SelectTrigger className="w-full bg-millionaire-secondary">
+                    <SelectValue placeholder="Select a question set" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(questionSets).map((setName) => (
+                      <SelectItem key={setName} value={setName}>
+                        {setName} ({questionSets[setName].length} questions)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </ScrollArea>
             </div>
             
             <Button

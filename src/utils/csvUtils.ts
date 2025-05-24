@@ -1,5 +1,6 @@
 
 import { Question } from "./gameUtils";
+import * as XLSX from 'xlsx';
 
 /**
  * Parse CSV data into Question objects
@@ -142,3 +143,13 @@ function parseCSVRow(row: string): string[] {
   result.push(current);
   return result;
 }
+
+/**
+ * Helper function to initialize SheetJS in browser
+ * Useful when working with Excel files directly in the browser
+ */
+export const initSheetJS = () => {
+  // Optional setup for SheetJS if needed
+  // This is a placeholder for any initialization that may be needed
+  console.log("SheetJS initialized");
+};
