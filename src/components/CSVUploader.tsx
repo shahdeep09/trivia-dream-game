@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -10,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { FileText, Upload } from 'lucide-react';
 import { Progress } from './ui/progress';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import * as XLSX from 'xlsx';
 
 interface CSVUploaderProps {
   onQuestionsImported: (questions: Question[]) => void;
