@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Question as QuestionType, playSound, GameSettings } from "@/utils/gameUtils";
 import Timer from "./Timer";
 import Lifeline from "./Lifeline";
@@ -42,6 +42,7 @@ const Question = ({
 }: QuestionProps) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [suspensePlayed, setSuspensePlayed] = useState(false);
+  const [spacebarTip, setSpacebarTip] = useState(false);
   const windowSize = useWindowSize();
   
   useEffect(() => {
@@ -50,17 +51,39 @@ const Question = ({
     setSuspensePlayed(false);
   }, [selectedOption, question]);
 
+  // Handle spacebar shortcut for confirming answer
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.code === 'Space' && selectedIndex !== null && !revealAnswer) {
+      event.preventDefault(); // Prevent page scrolling
+      onAnswer(selectedIndex);
+      setSpacebarTip(false);
+    }
+  }, [selectedIndex, onAnswer, revealAnswer]);
+
+  useEffect(() => {
+    // Add event listener for spacebar
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
+  useEffect(() => {
+    // Show the spacebar tip when an option is selected
+    if (selectedIndex !== null && !revealAnswer) {
+      setSpacebarTip(true);
+    } else {
+      setSpacebarTip(false);
+    }
+  }, [selectedIndex, revealAnswer]);
+
   const handleOptionClick = (index: number) => {
     if (selectedIndex !== null || disabledOptions.includes(index) || revealAnswer) return;
     
     setSelectedIndex(index);
     onOptionSelect(); // Pause the timer
-  };
-
-  const confirmAnswer = () => {
-    if (selectedIndex !== null) {
-      onAnswer(selectedIndex);
-    }
   };
 
   const getOptionClass = (index: number) => {
@@ -90,17 +113,29 @@ const Question = ({
   const optionLabels = ["A", "B", "C", "D"];
 
   return (
-    <ScrollArea className="h-[calc(100vh-220px)] w-full px-4">
-      <div className="w-full max-w-4xl mx-auto pb-8">
+    <div className="flex flex-col h-full">
+      {/* KBC Logo at the top */}
+      <div className="flex justify-center mb-4">
+        <div className="w-20 h-20 relative">
+          <img 
+            src="/placeholder.svg" 
+            alt="KBC Logo" 
+            className="w-full h-full object-contain"
+          />
+        </div>
+      </div>
+
+      {/* Question Container */}
+      <div className="w-full max-w-4xl mx-auto">
         {/* Question hexagon container */}
-        <div className="bg-millionaire-primary border-4 border-yellow-400 p-6 rounded-2xl mb-8 shadow-lg text-center relative hexagon-question">
-          <h2 className="text-3xl md:text-4xl text-white font-bold px-4 py-6">
+        <div className="bg-millionaire-primary border-4 border-yellow-400 p-6 rounded-2xl mb-6 shadow-lg text-center relative hexagon-question">
+          <h2 className="text-3xl md:text-4xl text-white font-bold px-4 py-4">
             {question.text}
           </h2>
         </div>
 
         {/* Options in grid layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {question.options.map((option, index) => (
             <button
               key={index}
@@ -119,7 +154,7 @@ const Question = ({
         </div>
 
         {/* Timer positioned below questions */}
-        <div className="mt-8 mb-6">
+        <div className="mt-6 mb-4">
           <Timer
             isActive={!revealAnswer}
             onTimeUp={onTimeUp}
@@ -129,7 +164,7 @@ const Question = ({
         </div>
 
         {/* Lifelines positioned under the timer */}
-        <div className="flex justify-center mb-6 gap-6">
+        <div className="flex justify-center mb-4 gap-6">
           <Lifeline
             type="fifty-fifty"
             isUsed={lifelinesUsed["fifty-fifty"]}
@@ -153,18 +188,14 @@ const Question = ({
           />
         </div>
 
-        {selectedIndex !== null && !revealAnswer && (
-          <div className="mt-6 flex justify-center">
-            <button
-              className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary font-bold py-2 px-6 rounded-full animate-pulse"
-              onClick={confirmAnswer}
-            >
-              Final Answer
-            </button>
+        {/* Spacebar tip message */}
+        {spacebarTip && (
+          <div className="mt-4 text-center animate-pulse">
+            <p className="text-millionaire-gold font-bold">Press SPACEBAR to confirm your final answer</p>
           </div>
         )}
       </div>
-    </ScrollArea>
+    </div>
   );
 };
 

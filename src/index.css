@@ -132,4 +132,25 @@
   .timer-bar {
     @apply h-2 bg-millionaire-accent rounded-full transition-all;
   }
+
+  /* Full screen styles */
+  .fullscreen-layout {
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .kbc-logo {
+    animation: pulse-glow 2s infinite alternate;
+  }
+  
+  @keyframes pulse-glow {
+    0% {
+      filter: drop-shadow(0 0 2px #ffc107);
+    }
+    100% {
+      filter: drop-shadow(0 0 10px #ffc107);
+    }
+  }
 }
