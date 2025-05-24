@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Question as QuestionType, playSound, GameSettings } from "@/utils/gameUtils";
 import Timer from "./Timer";
@@ -93,11 +92,12 @@ const Question = ({
       className += " opacity-30";
     }
     
-    if (selectedIndex === index) {
-      className += " selected bg-millionaire-accent"; 
+    // Make selected options yellow (before answer reveal)
+    if (selectedIndex === index && !showResult) {
+      className += " selected bg-yellow-500 text-millionaire-primary"; 
     }
-    
-    if (showResult && revealAnswer) {
+    // Keep the previous styling for revealed answers
+    else if (showResult && revealAnswer) {
       if (index === question.correctOptionIndex) {
         className += " correct bg-millionaire-correct border-millionaire-correct";
       } else if (selectedIndex === index) {
@@ -120,7 +120,7 @@ const Question = ({
           <img 
             src="/placeholder.svg" 
             alt="KBC Logo" 
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain kbc-logo"
           />
         </div>
       </div>
@@ -160,31 +160,6 @@ const Question = ({
             onTimeUp={onTimeUp}
             settings={settings}
             isPaused={timerPaused}
-          />
-        </div>
-
-        {/* Lifelines positioned under the timer */}
-        <div className="flex justify-center mb-4 gap-6">
-          <Lifeline
-            type="fifty-fifty"
-            isUsed={lifelinesUsed["fifty-fifty"]}
-            onUse={onUseLifeline}
-            currentQuestion={question}
-            settings={settings}
-          />
-          <Lifeline
-            type="phone-friend"
-            isUsed={lifelinesUsed["phone-friend"]}
-            onUse={onUseLifeline}
-            currentQuestion={question}
-            settings={settings}
-          />
-          <Lifeline
-            type="ask-audience"
-            isUsed={lifelinesUsed["ask-audience"]}
-            onUse={onUseLifeline}
-            currentQuestion={question}
-            settings={settings}
           />
         </div>
 

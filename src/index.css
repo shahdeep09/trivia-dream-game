@@ -52,9 +52,25 @@
   }
 
   body {
-    @apply bg-millionaire-dark text-millionaire-light font-sans;
+    @apply bg-millionaire-dark text-millionaire-light font-sans m-0 p-0;
     /* Add support for Hindi/Gujarati fonts */
     font-family: 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Gujarati', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    min-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  /* Full screen mode optimizations */
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Add smooth scrolling */
+  html {
+    scroll-behavior: smooth;
   }
 }
 
@@ -103,6 +119,13 @@
     @apply w-full bg-millionaire-accent opacity-50;
   }
   
+  /* Selected option styling - yellow background */
+  .selected {
+    background-color: #ffc107 !important;
+    color: #1a237e !important;
+    font-weight: bold;
+  }
+  
   .money-ladder-item {
     @apply py-1 px-4 mb-1 rounded text-center transition-all duration-200;
   }
@@ -139,10 +162,13 @@
     width: 100vw;
     display: flex;
     flex-direction: column;
+    overflow: auto;
   }
   
   .kbc-logo {
     animation: pulse-glow 2s infinite alternate;
+    max-width: 300px;
+    max-height: 300px;
   }
   
   @keyframes pulse-glow {

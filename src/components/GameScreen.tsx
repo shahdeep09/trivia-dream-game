@@ -9,6 +9,7 @@ import { Undo } from "lucide-react"; // Import Undo icon
 import Confetti from "react-confetti"; // We'll need to install this package
 import { useWindowSize } from "@/hooks/use-window-size"; // Custom hook for window size
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Lifeline from "./Lifeline";
 
 interface GameScreenProps {
   questions: QuestionType[];
@@ -60,7 +61,7 @@ const GameScreen = ({
   
   // Action history for undo functionality
   const [actionHistory, setActionHistory] = useState<GameAction[]>([]);
-  
+
   // Prepare questions when game starts
   useEffect(() => {
     if (questions.length > 0) {
@@ -331,16 +332,43 @@ const GameScreen = ({
       
       {/* Control bar */}
       <div className="flex justify-between items-center p-4 bg-millionaire-primary border-b border-millionaire-accent">
-        <div className="text-millionaire-gold font-bold text-2xl">
-          {formatMoney(currentQuestion.value)}
-        </div>
-        
-        {teamName && (
-          <div className="bg-millionaire-secondary px-4 py-2 rounded-lg text-center">
-            <span className="text-millionaire-gold font-bold mr-2">Team:</span>
-            <span>{teamName}</span>
+        <div className="flex items-center gap-4">
+          <div className="text-millionaire-gold font-bold text-2xl">
+            {formatMoney(currentQuestion.value)}
           </div>
-        )}
+          
+          {teamName && (
+            <div className="bg-millionaire-secondary px-4 py-2 rounded-lg text-center">
+              <span className="text-millionaire-gold font-bold mr-2">Team:</span>
+              <span>{teamName}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Lifelines in the center (red box area) */}
+        <div className="flex justify-center gap-6">
+          <Lifeline
+            type="fifty-fifty"
+            isUsed={lifelinesUsed["fifty-fifty"]}
+            onUse={handleUseLifeline}
+            currentQuestion={currentQuestion}
+            settings={settings}
+          />
+          <Lifeline
+            type="phone-friend"
+            isUsed={lifelinesUsed["phone-friend"]}
+            onUse={handleUseLifeline}
+            currentQuestion={currentQuestion}
+            settings={settings}
+          />
+          <Lifeline
+            type="ask-audience"
+            isUsed={lifelinesUsed["ask-audience"]}
+            onUse={handleUseLifeline}
+            currentQuestion={currentQuestion}
+            settings={settings}
+          />
+        </div>
         
         <div className="flex gap-2">
           <Button

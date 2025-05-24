@@ -12,7 +12,7 @@ const MoneyLadder = ({ currentLevel }: MoneyLadderProps) => {
   // Get the class name for a level
   const getLevelClass = (index: number) => {
     const reversedIndex = POINTS_VALUES.length - 1 - index;
-    let className = "p-1 text-center rounded-md flex justify-between items-center text-sm";
+    let className = "p-1 text-center rounded-md flex justify-between items-center text-xs";
     
     if (reversedIndex === currentLevel) {
       className += " bg-millionaire-accent text-millionaire-primary font-bold";
@@ -32,8 +32,8 @@ const MoneyLadder = ({ currentLevel }: MoneyLadderProps) => {
   
   return (
     <div className="bg-millionaire-secondary p-2 rounded-lg shadow-lg h-full">
-      <h2 className="text-lg font-bold text-center mb-2 text-millionaire-gold">Points Ladder</h2>
-      <div className="space-y-1">
+      <h2 className="text-base font-bold text-center mb-2 text-millionaire-gold">Points Ladder</h2>
+      <div className="space-y-0.5">
         {reversedValues.map((value, index) => (
           <div key={index} className={getLevelClass(index)}>
             <span className="w-4 text-center">{POINTS_VALUES.length - index}</span>
