@@ -54,13 +54,26 @@ export const SAMPLE_TEAMS: Team[] = [
   { id: "10", name: "Smart Sharks", points: 0, gamesPlayed: 0 },
 ];
 
-// Money ladder values in order (smallest to largest)
+// New points and timer logic based on question levels
+export const getQuestionConfig = (questionIndex: number) => {
+  if (questionIndex < 5) {
+    return { points: 100, timeLimit: 30 };
+  } else if (questionIndex < 10) {
+    return { points: 200, timeLimit: 60 };
+  } else {
+    return { points: 300, timeLimit: 90 };
+  }
+};
+
+// Money ladder values based on new logic (15 questions total)
 export const POINTS_VALUES = [
-  100, 200, 300, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 125000, 250000, 500000, 1000000
+  100, 100, 100, 100, 100, // Questions 1-5: 100 points each
+  200, 200, 200, 200, 200, // Questions 6-10: 200 points each
+  300, 300, 300, 300, 300  // Questions 11-15: 300 points each
 ];
 
 // Milestone values (guaranteed money) - renamed to MILESTONE_POINTS
-export const MILESTONE_VALUES = [1000, 32000, 1000000];
+export const MILESTONE_VALUES = [100, 200, 300];
 
 // Shuffle options for a question while preserving the correct answer
 export function shuffleOptions(question: Question): Question {

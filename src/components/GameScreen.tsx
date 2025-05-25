@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team, GameAction, addGameAction, undoLastAction } from "@/utils/gameUtils";
+import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import Question from "./Question";
 import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -68,8 +68,14 @@ const GameScreen = ({
       // Sort questions by value/difficulty
       const sortedQuestions = [...questions].sort((a, b) => a.value - b.value);
       
-      // Shuffle options for each question
-      const preparedQuestions = sortedQuestions.map(q => shuffleOptions(q));
+      // Update questions with new point values based on position
+      const preparedQuestions = sortedQuestions.slice(0, 15).map((q, index) => {
+        const config = getQuestionConfig(index);
+        return {
+          ...shuffleOptions(q),
+          value: config.points
+        };
+      });
       
       setGameQuestions(preparedQuestions);
       playSound("lets-play", settings);
@@ -308,6 +314,7 @@ const GameScreen = ({
   };
 
   const teamName = getCurrentTeamName();
+  const currentConfig = getQuestionConfig(currentQuestionIndex);
 
   if (!currentQuestion) {
     return (
@@ -334,7 +341,7 @@ const GameScreen = ({
       <div className="flex justify-between items-center p-4 bg-millionaire-primary border-b border-millionaire-accent">
         <div className="flex items-center gap-4">
           <div className="text-millionaire-gold font-bold text-2xl">
-            {formatMoney(currentQuestion.value)}
+            {formatMoney(currentConfig.points)}
           </div>
           
           {teamName && (
@@ -424,6 +431,7 @@ const GameScreen = ({
             timerPaused={timerPaused}
             lifelinesUsed={lifelinesUsed}
             onUseLifeline={handleUseLifeline}
+            questionIndex={currentQuestionIndex}
           />
         </div>
       </div>

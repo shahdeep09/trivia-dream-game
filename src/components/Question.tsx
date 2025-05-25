@@ -1,6 +1,7 @@
+
 import { useState, useEffect, useCallback } from "react";
-import { Question as QuestionType, playSound, GameSettings } from "@/utils/gameUtils";
-import Timer from "./Timer";
+import { Question as QuestionType, playSound, GameSettings, getQuestionConfig } from "@/utils/gameUtils";
+import CircularTimer from "./CircularTimer";
 import Lifeline from "./Lifeline";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -23,6 +24,7 @@ interface QuestionProps {
     "ask-audience": boolean;
   };
   onUseLifeline: (type: "fifty-fifty" | "phone-friend" | "ask-audience", result: any) => void;
+  questionIndex: number;
 }
 
 const Question = ({
@@ -38,6 +40,7 @@ const Question = ({
   timerPaused,
   lifelinesUsed,
   onUseLifeline,
+  questionIndex,
 }: QuestionProps) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [suspensePlayed, setSuspensePlayed] = useState(false);
@@ -118,7 +121,7 @@ const Question = ({
       <div className="flex justify-center mb-4">
         <div className="w-20 h-20 relative">
           <img 
-            src="/placeholder.svg" 
+            src="/lovable-uploads/7a4ab7f7-1f17-4576-be09-22adf0ee4b13.png" 
             alt="KBC Logo" 
             className="w-full h-full object-contain kbc-logo"
           />
@@ -155,11 +158,12 @@ const Question = ({
 
         {/* Timer positioned below questions */}
         <div className="mt-6 mb-4">
-          <Timer
+          <CircularTimer
             isActive={!revealAnswer}
             onTimeUp={onTimeUp}
             settings={settings}
             isPaused={timerPaused}
+            questionIndex={questionIndex}
           />
         </div>
 
