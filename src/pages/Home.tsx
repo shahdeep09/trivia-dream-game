@@ -5,18 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { Trophy, Users, ChevronUp, ChevronDown } from "lucide-react";
+import { Trophy, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 
-type SortField = 'rank' | 'name' | 'gamePoints' | 'bonusPoints' | 'totalPoints' | 'gamesPlayed' | 'lifelines';
-type SortOrder = 'asc' | 'desc';
-
 const Home = () => {
   const [teams, setTeams] = useState<Team[]>([]);
-  const [sortField, setSortField] = useState<SortField>('totalPoints');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   
   useEffect(() => {
     // Load teams from localStorage or use sample data
@@ -70,58 +65,6 @@ const Home = () => {
       title: "Bonus Points Saved",
       description: "The bonus points have been updated for this team.",
     });
-  };
-
-  // Handle sorting
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('desc');
-    }
-  };
-
-  // Sort teams based on current sort field and order
-  const sortedTeams = [...teams].sort((a, b) => {
-    let comparison = 0;
-    
-    switch (sortField) {
-      case 'name':
-        comparison = a.name.localeCompare(b.name);
-        break;
-      case 'gamePoints':
-        comparison = a.points - b.points;
-        break;
-      case 'bonusPoints':
-        comparison = (a.bonusPoints || 0) - (b.bonusPoints || 0);
-        break;
-      case 'totalPoints':
-        const totalA = calculateTotalPoints(a);
-        const totalB = calculateTotalPoints(b);
-        comparison = totalA - totalB;
-        // If total points are equal, sort by lifelines (fewer lifelines is better)
-        if (comparison === 0) {
-          comparison = (a.totalLifelinesUsed || 0) - (b.totalLifelinesUsed || 0);
-        }
-        break;
-      case 'gamesPlayed':
-        comparison = a.gamesPlayed - b.gamesPlayed;
-        break;
-      case 'lifelines':
-        comparison = (a.totalLifelinesUsed || 0) - (b.totalLifelinesUsed || 0);
-        break;
-      default:
-        comparison = 0;
-    }
-    
-    return sortOrder === 'asc' ? comparison : -comparison;
-  });
-
-  // Get sort icon for a column
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return null;
-    return sortOrder === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />;
   };
   
   return (
@@ -192,98 +135,51 @@ const Home = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-millionaire-primary">
-                      <TableHead 
-                        className="text-millionaire-gold cursor-pointer hover:bg-millionaire-accent"
-                        onClick={() => handleSort('rank')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Rank {getSortIcon('rank')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="text-millionaire-gold cursor-pointer hover:bg-millionaire-accent"
-                        onClick={() => handleSort('name')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Team {getSortIcon('name')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="text-millionaire-gold cursor-pointer hover:bg-millionaire-accent"
-                        onClick={() => handleSort('gamePoints')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Game Points {getSortIcon('gamePoints')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="text-millionaire-gold cursor-pointer hover:bg-millionaire-accent"
-                        onClick={() => handleSort('bonusPoints')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Bonus Points {getSortIcon('bonusPoints')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="text-millionaire-gold cursor-pointer hover:bg-millionaire-accent"
-                        onClick={() => handleSort('totalPoints')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Total Points {getSortIcon('totalPoints')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="text-millionaire-gold cursor-pointer hover:bg-millionaire-accent"
-                        onClick={() => handleSort('gamesPlayed')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Games Played {getSortIcon('gamesPlayed')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="text-millionaire-gold cursor-pointer hover:bg-millionaire-accent"
-                        onClick={() => handleSort('lifelines')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Lifelines Used {getSortIcon('lifelines')}
-                        </div>
-                      </TableHead>
+                      <TableHead className="text-millionaire-gold">Rank</TableHead>
+                      <TableHead className="text-millionaire-gold">Team</TableHead>
+                      <TableHead className="text-millionaire-gold">Game Points</TableHead>
+                      <TableHead className="text-millionaire-gold">Bonus Points</TableHead>
+                      <TableHead className="text-millionaire-gold">Total Points</TableHead>
+                      <TableHead className="text-millionaire-gold">Games Played</TableHead>
+                      <TableHead className="text-millionaire-gold">Lifelines Used</TableHead>
                       <TableHead className="text-millionaire-gold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedTeams.map((team, index) => (
-                      <TableRow key={team.id} className="border-b border-millionaire-accent">
-                        <TableCell className="font-medium">{index + 1}</TableCell>
-                        <TableCell>{team.name}</TableCell>
-                        <TableCell>{team.points}</TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            className="w-20 bg-millionaire-primary text-millionaire-gold border-millionaire-accent"
-                            value={team.bonusPoints || 0}
-                            onChange={(e) => handleBonusPointsChange(team.id, e.target.value)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-bold text-millionaire-gold">
-                          {calculateTotalPoints(team)}
-                        </TableCell>
-                        <TableCell>{team.gamesPlayed}</TableCell>
-                        <TableCell className="font-medium text-millionaire-accent">
-                          {team.totalLifelinesUsed || 0}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            className="bg-millionaire-accent hover:bg-millionaire-gold text-millionaire-primary"
-                            onClick={() => saveBonusPoints(team.id)}
-                          >
-                            Save
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {teams
+                      .sort((a, b) => calculateTotalPoints(b) - calculateTotalPoints(a))
+                      .map((team, index) => (
+                        <TableRow key={team.id} className="border-b border-millionaire-accent">
+                          <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableCell>{team.name}</TableCell>
+                          <TableCell>{team.points}</TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min="0"
+                              className="w-20 bg-millionaire-primary text-millionaire-gold border-millionaire-accent"
+                              value={team.bonusPoints || 0}
+                              onChange={(e) => handleBonusPointsChange(team.id, e.target.value)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-bold text-millionaire-gold">
+                            {calculateTotalPoints(team)}
+                          </TableCell>
+                          <TableCell>{team.gamesPlayed}</TableCell>
+                          <TableCell className="font-medium text-millionaire-accent">
+                            {team.totalLifelinesUsed || 0}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              className="bg-millionaire-accent hover:bg-millionaire-gold text-millionaire-primary"
+                              onClick={() => saveBonusPoints(team.id)}
+                            >
+                              Save
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </CardContent>
