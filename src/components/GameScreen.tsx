@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import Question from "./Question";
@@ -259,7 +260,8 @@ const GameScreen = ({
     setActionHistory([...actionHistory, walkAwayAction]);
   };
 
-  const handleOptionSelect = () => {
+  const handleOptionSelect = (optionIndex: number) => {
+    setSelectedOption(optionIndex);
     setTimerPaused(true);
   };
 
@@ -312,6 +314,19 @@ const GameScreen = ({
     }
   };
 
+  // Add keyboard event listener for spacebar
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.code === 'Space' && selectedOption !== null && !revealAnswer) {
+        event.preventDefault();
+        handleFinalAnswer();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [selectedOption, revealAnswer]);
+
   // Get the current team name if a team is playing
   const getCurrentTeamName = (): string => {
     if (!teamId) return "";
@@ -359,6 +374,15 @@ const GameScreen = ({
             </div>
           )}
           
+          {/* KBC Logo - Made 1.5 times bigger */}
+          <div className="flex items-center">
+            <img 
+              src="/lovable-uploads/53c30491-2339-4371-b7b0-b77acda033a4.png" 
+              alt="KBC Logo" 
+              className="h-16 w-auto" 
+            />
+          </div>
+          
           <div className="text-millionaire-gold font-bold text-2xl">
             Total: {formatMoney(cumulativePoints)}
           </div>
@@ -401,7 +425,9 @@ const GameScreen = ({
           </Button>
           <Button
             variant="outline"
-            className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary flex items-center gap-1"
+            className={`border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary flex items-center gap-1 ${
+              selectedOption === null || revealAnswer ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
             onClick={handleFinalAnswer}
             disabled={selectedOption === null || revealAnswer}
           >
