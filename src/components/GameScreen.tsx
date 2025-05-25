@@ -5,7 +5,7 @@ import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Undo } from "lucide-react"; // Import Undo icon
+import { Undo, CheckCircle } from "lucide-react"; // Import Undo icon
 import Confetti from "react-confetti"; // We'll need to install this package
 import { useWindowSize } from "@/hooks/use-window-size"; // Custom hook for window size
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -36,6 +36,7 @@ const GameScreen = ({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [gameQuestions, setGameQuestions] = useState<QuestionType[]>([]);
   const [moneyWon, setMoneyWon] = useState(0);
+  const [cumulativePoints, setCumulativePoints] = useState(0); // New state for cumulative points
   const [revealAnswer, setRevealAnswer] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -58,6 +59,7 @@ const GameScreen = ({
     "ask-audience": false,
   });
   const [disabledOptions, setDisabledOptions] = useState<number[]>([]);
+  const [totalLifelinesUsedInGame, setTotalLifelinesUsedInGame] = useState(0); // New state for tracking lifelines used in current game
   
   // Action history for undo functionality
   const [actionHistory, setActionHistory] = useState<GameAction[]>([]);
@@ -107,8 +109,10 @@ const GameScreen = ({
         playSound("correct", settings);
       }
       
-      // Update money won - always get points for correct answers regardless of question number
-      setMoneyWon(currentQuestion.value);
+      // Update cumulative points and money won
+      const newCumulativePoints = cumulativePoints + currentQuestion.value;
+      setCumulativePoints(newCumulativePoints);
+      setMoneyWon(newCumulativePoints);
       
       // Wait a moment and then show dialog
       setTimeout(() => {
@@ -118,9 +122,9 @@ const GameScreen = ({
           setGameOver(true);
           playSound("win", settings);
           setShowConfetti(true); // Show confetti for winning on the last question
-          setDialogMessage(`Congratulations! You've won ${formatMoney(currentQuestion.value)}!`);
+          setDialogMessage(`Congratulations! You've won ${formatMoney(newCumulativePoints)}!`);
         } else {
-          setDialogMessage(`Correct! You now have ${formatMoney(currentQuestion.value)}`);
+          setDialogMessage(`Correct! You now have ${formatMoney(newCumulativePoints)}`);
           
           // Check if we should show explanation
           if (currentQuestion.explanation) {
@@ -133,15 +137,14 @@ const GameScreen = ({
       // Play wrong answer sound
       playSound("wrong", settings);
       
-      // Game over - set earned money
-      const earnedMoney = moneyWon; // Just keep what they've earned
+      // Game over - keep cumulative points earned so far
       setTimeout(() => {
         setGameOver(true);
         setDialogMessage(
           `Sorry, that's incorrect. The correct answer was ${currentQuestion.options[currentQuestion.correctOptionIndex]}.
-          You leave with ${formatMoney(earnedMoney)}`
+          You leave with ${formatMoney(cumulativePoints)}`
         );
-        setMoneyWon(earnedMoney);
+        setMoneyWon(cumulativePoints);
         
         // Check if we should show explanation
         if (currentQuestion.explanation) {
@@ -174,10 +177,9 @@ const GameScreen = ({
 
   const handleTimeUp = () => {
     setGameOver(true);
-    // You get to keep what you've earned
     setDialogMessage(
       `Time's up! You ran out of time.
-      You leave with ${formatMoney(moneyWon)}`
+      You leave with ${formatMoney(cumulativePoints)}`
     );
     setDialogOpen(true);
     
@@ -191,6 +193,7 @@ const GameScreen = ({
 
   const handleUseLifeline = (type: "fifty-fifty" | "phone-friend" | "ask-audience", result: any) => {
     setLifelinesUsed({ ...lifelinesUsed, [type]: true });
+    setTotalLifelinesUsedInGame(totalLifelinesUsedInGame + 1); // Increment lifeline usage count
     playSound("lifeline", settings);
     
     if (type === "fifty-fifty") {
@@ -209,7 +212,7 @@ const GameScreen = ({
     setResultDialogOpen(false);
     setShowConfetti(false);
 
-    // Update team score if a team is playing
+    // Update team score and lifeline usage if a team is playing
     if (teamId) {
       const savedTeams = localStorage.getItem("millionaire-teams");
       if (savedTeams) {
@@ -218,8 +221,9 @@ const GameScreen = ({
           if (team.id === teamId) {
             return {
               ...team,
-              points: team.points + moneyWon,
-              gamesPlayed: team.gamesPlayed + 1
+              points: team.points + cumulativePoints, // Use cumulative points
+              gamesPlayed: team.gamesPlayed + 1,
+              totalLifelinesUsed: (team.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
             };
           }
           return team;
@@ -229,7 +233,7 @@ const GameScreen = ({
     }
     
     onGameEnd({
-      totalWon: moneyWon,
+      totalWon: cumulativePoints, // Use cumulative points
       questionLevel: currentQuestionIndex + 1,
       isWinner: gameWon,
       teamId
@@ -242,7 +246,7 @@ const GameScreen = ({
   const handleWalkAway = () => {
     setGameOver(true);
     setDialogMessage(
-      `You've decided to walk away with ${formatMoney(moneyWon)}.
+      `You've decided to walk away with ${formatMoney(cumulativePoints)}.
        The correct answer was ${currentQuestion.options[currentQuestion.correctOptionIndex]}.`
     );
     setDialogOpen(true);
@@ -250,7 +254,7 @@ const GameScreen = ({
     // Add walk away action to history
     const walkAwayAction: GameAction = {
       type: 'WALK_AWAY',
-      data: { moneyWon, questionIndex: currentQuestionIndex }
+      data: { moneyWon: cumulativePoints, questionIndex: currentQuestionIndex }
     };
     setActionHistory([...actionHistory, walkAwayAction]);
   };
@@ -281,6 +285,7 @@ const GameScreen = ({
           // Undo lifeline usage
           const { type } = lastAction.data;
           setLifelinesUsed({ ...lifelinesUsed, [type]: false });
+          setTotalLifelinesUsedInGame(Math.max(0, totalLifelinesUsedInGame - 1));
           if (type === "fifty-fifty") {
             setDisabledOptions([]);
           }
@@ -297,6 +302,13 @@ const GameScreen = ({
           setDialogOpen(false);
           break;
       }
+    }
+  };
+
+  // Handle final answer confirmation
+  const handleFinalAnswer = () => {
+    if (selectedOption !== null && !revealAnswer) {
+      handleAnswer(selectedOption);
     }
   };
 
@@ -340,16 +352,16 @@ const GameScreen = ({
       {/* Control bar */}
       <div className="flex justify-between items-center p-4 bg-millionaire-primary border-b border-millionaire-accent">
         <div className="flex items-center gap-4">
-          <div className="text-millionaire-gold font-bold text-2xl">
-            {formatMoney(currentConfig.points)}
-          </div>
-          
           {teamName && (
             <div className="bg-millionaire-secondary px-4 py-2 rounded-lg text-center">
               <span className="text-millionaire-gold font-bold mr-2">Team:</span>
               <span>{teamName}</span>
             </div>
           )}
+          
+          <div className="text-millionaire-gold font-bold text-2xl">
+            Total: {formatMoney(cumulativePoints)}
+          </div>
         </div>
 
         {/* Lifelines in the center (red box area) */}
@@ -386,6 +398,15 @@ const GameScreen = ({
           >
             <Undo size={16} />
             Undo
+          </Button>
+          <Button
+            variant="outline"
+            className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary flex items-center gap-1"
+            onClick={handleFinalAnswer}
+            disabled={selectedOption === null || revealAnswer}
+          >
+            <CheckCircle size={16} />
+            Final Answer
           </Button>
           <Button
             variant="outline"
@@ -481,7 +502,7 @@ const GameScreen = ({
                   You're a Millionaire!
                 </h3>
                 <p className="text-xl mb-6">
-                  You've won {formatMoney(moneyWon)}!
+                  You've won {formatMoney(cumulativePoints)}!
                 </p>
               </div>
             ) : (
@@ -490,7 +511,7 @@ const GameScreen = ({
                   You made it to question #{currentQuestionIndex + 1}
                 </p>
                 <p className="text-xl font-bold mb-6">
-                  You walk away with {formatMoney(moneyWon)}
+                  You walk away with {formatMoney(cumulativePoints)}
                 </p>
               </div>
             )}

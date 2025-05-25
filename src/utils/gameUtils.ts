@@ -1,5 +1,5 @@
 import { toast } from "@/hooks/use-toast";
-import { playSound as playSoundEffect } from "./soundUtils";
+import { playSoundEffect } from "./soundUtils";
 
 export interface Question {
   id: string;
@@ -18,6 +18,7 @@ export interface Team {
   points: number;
   gamesPlayed: number;
   bonusPoints?: number;
+  totalLifelinesUsed?: number; // New field for tracking lifeline usage
 }
 
 export interface GameSettings {
@@ -42,16 +43,16 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
 
 // Sample teams data
 export const SAMPLE_TEAMS: Team[] = [
-  { id: "1", name: "Brilliant Minds", points: 0, gamesPlayed: 0 },
-  { id: "2", name: "Quiz Masters", points: 0, gamesPlayed: 0 },
-  { id: "3", name: "Knowledge Warriors", points: 0, gamesPlayed: 0 },
-  { id: "4", name: "Brain Busters", points: 0, gamesPlayed: 0 },
-  { id: "5", name: "Trivia Titans", points: 0, gamesPlayed: 0 },
-  { id: "6", name: "Cerebral Challengers", points: 0, gamesPlayed: 0 },
-  { id: "7", name: "Whiz Kids", points: 0, gamesPlayed: 0 },
-  { id: "8", name: "Intellectual Giants", points: 0, gamesPlayed: 0 },
-  { id: "9", name: "Genius Junction", points: 0, gamesPlayed: 0 },
-  { id: "10", name: "Smart Sharks", points: 0, gamesPlayed: 0 },
+  { id: "1", name: "Brilliant Minds", points: 0, gamesPlayed: 0, totalLifelinesUsed: 0 },
+  { id: "2", name: "Quiz Masters", points: 0, gamesPlayed: 0, totalLifelinesUsed: 0 },
+  { id: "3", name: "Knowledge Warriors", points: 0, gamesPlayed: 0, totalLifelinesUsed: 0 },
+  { id: "4", name: "Brain Busters", points: 0, gamesPlayed: 0, totalLifelinesUsed: 0 },
+  { id: "5", name: "Trivia Titans", points: 0, gamesPlayed: 0, totalLifelinesUsed: 0 },
+  { id: "6", name: "Cerebral Challengers", points: 0, gamesPlayed: 0, totalLifelinesUsed: 0 },
+  { id: "7", name: "Whiz Kids", points: 0, gamesPlayed: 0, totalLifelinesUsed: 0 },
+  { id: "8", name: "Intellectual Giants", points: 0, gamesPlayed: 0, totalLifelinesUsed: 0 },
+  { id: "9", name: "Genius Junction", points: 0, gamesPlayed: 0, totalLifelinesUsed: 0 },
+  { id: "10", name: "Smart Sharks", points: 0, gamesPlayed: 0, totalLifelinesUsed: 0 },
 ];
 
 // New points and timer logic based on question levels

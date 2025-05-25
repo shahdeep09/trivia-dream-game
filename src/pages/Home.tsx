@@ -17,14 +17,22 @@ const Home = () => {
     // Load teams from localStorage or use sample data
     const savedTeams = localStorage.getItem("millionaire-teams");
     if (savedTeams) {
-      setTeams(JSON.parse(savedTeams));
-    } else {
-      // Initialize teams with bonus points if they don't have it
-      const teamsWithBonus = SAMPLE_TEAMS.map(team => ({
+      const loadedTeams: Team[] = JSON.parse(savedTeams);
+      // Ensure all teams have the new totalLifelinesUsed field
+      const teamsWithLifelines = loadedTeams.map(team => ({
         ...team,
-        bonusPoints: team.bonusPoints || 0
+        bonusPoints: team.bonusPoints || 0,
+        totalLifelinesUsed: team.totalLifelinesUsed || 0
       }));
-      setTeams(teamsWithBonus);
+      setTeams(teamsWithLifelines);
+    } else {
+      // Initialize teams with bonus points and lifeline usage if they don't have it
+      const teamsWithExtras = SAMPLE_TEAMS.map(team => ({
+        ...team,
+        bonusPoints: team.bonusPoints || 0,
+        totalLifelinesUsed: team.totalLifelinesUsed || 0
+      }));
+      setTeams(teamsWithExtras);
     }
   }, []);
   
@@ -103,6 +111,7 @@ const Home = () => {
                         <p><span className="font-medium">Bonus Points:</span> {team.bonusPoints || 0}</p>
                         <p><span className="font-medium">Total Points:</span> {calculateTotalPoints(team)}</p>
                         <p><span className="font-medium">Games Played:</span> {team.gamesPlayed}</p>
+                        <p><span className="font-medium">Lifelines Used:</span> {team.totalLifelinesUsed || 0}</p>
                       </div>
                       <Button
                         asChild
@@ -132,6 +141,7 @@ const Home = () => {
                       <TableHead className="text-millionaire-gold">Bonus Points</TableHead>
                       <TableHead className="text-millionaire-gold">Total Points</TableHead>
                       <TableHead className="text-millionaire-gold">Games Played</TableHead>
+                      <TableHead className="text-millionaire-gold">Lifelines Used</TableHead>
                       <TableHead className="text-millionaire-gold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -156,6 +166,9 @@ const Home = () => {
                             {calculateTotalPoints(team)}
                           </TableCell>
                           <TableCell>{team.gamesPlayed}</TableCell>
+                          <TableCell className="font-medium text-millionaire-accent">
+                            {team.totalLifelinesUsed || 0}
+                          </TableCell>
                           <TableCell>
                             <Button
                               size="sm"
