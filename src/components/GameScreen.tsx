@@ -259,7 +259,9 @@ const GameScreen = ({
     setActionHistory([...actionHistory, walkAwayAction]);
   };
 
-  const handleOptionSelect = () => {
+  // Fix: Create a proper handler for option selection that doesn't expect parameters
+  const handleOptionSelect = (optionIndex: number) => {
+    setSelectedOption(optionIndex);
     setTimerPaused(true);
   };
 
