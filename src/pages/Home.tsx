@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Team, SAMPLE_TEAMS } from "@/utils/gameUtils";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { Trophy, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import LogoutButton from "@/components/LogoutButton";
 
 const Home = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -77,12 +77,15 @@ const Home = () => {
               Team Competition
             </p>
           </div>
-          <Button
-            asChild
-            className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
-          >
-            <Link to="/game">Play Game</Link>
-          </Button>
+          <div className="flex gap-4">
+            <LogoutButton />
+            <Button
+              asChild
+              className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
+            >
+              <Link to="/game">Play Game</Link>
+            </Button>
+          </div>
         </div>
         
         <Tabs defaultValue="teams" className="w-full">
