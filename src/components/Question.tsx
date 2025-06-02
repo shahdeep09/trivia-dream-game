@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Question as QuestionType, playSound, GameSettings, getQuestionConfig } from "@/utils/gameUtils";
 import CircularTimer from "./CircularTimer";
@@ -15,7 +14,7 @@ interface QuestionProps {
   settings: GameSettings;
   selectedOption: number | null;
   showResult: boolean;
-  onOptionSelect: () => void;
+  onOptionSelect: (optionIndex: number) => void; // Updated to accept optionIndex parameter
   onTimeUp: () => void;
   timerPaused: boolean;
   lifelinesUsed: {
@@ -85,7 +84,7 @@ const Question = ({
     if (selectedIndex !== null || disabledOptions.includes(index) || revealAnswer) return;
     
     setSelectedIndex(index);
-    onOptionSelect(); // Pause the timer
+    onOptionSelect(index); // Pass the option index to the parent component
   };
 
   const getOptionClass = (index: number) => {
@@ -117,9 +116,9 @@ const Question = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* KBC Logo at the top */}
+      {/* KBC Logo at the top - 1.5x bigger */}
       <div className="flex justify-center mb-4">
-        <div className="w-20 h-20 relative">
+        <div className="w-30 h-30 relative">
           <img 
             src="/lovable-uploads/7a4ab7f7-1f17-4576-be09-22adf0ee4b13.png" 
             alt="KBC Logo" 
