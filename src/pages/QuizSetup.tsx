@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const QuizSetup = () => {
   const navigate = useNavigate();
-  const [logo, setLogo] = useState<string>("/lovable-uploads/1a649c49-3877-4d02-8989-3f8a7fb3c46b.png");
+  const [logo, setLogo] = useState<string>("/lovable-uploads/2eddc572-47b4-4a7f-9677-0df901c20273.png");
   const [numberOfQuestions, setNumberOfQuestions] = useState<number>(15);
   const [showQuestionConfig, setShowQuestionConfig] = useState(false);
   const [questionConfig, setQuestionConfig] = useState<Array<{
