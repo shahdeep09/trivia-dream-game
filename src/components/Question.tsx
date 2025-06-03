@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Question as QuestionType, GameSettings } from "@/utils/gameUtils";
 import { Button } from "@/components/ui/button";
@@ -65,17 +64,24 @@ const Question = ({
       return baseClass + "opacity-50 cursor-not-allowed bg-gray-600 border-2 border-yellow-400";
     }
     
-    if (selectedOption === index) {
-      baseClass += "bg-orange-500 border-2 border-yellow-400 shadow-lg ";
-    } else {
-      baseClass += "bg-blue-800 hover:bg-blue-700 border-2 border-yellow-400 ";
-    }
-    
+    // When answer is revealed and we're showing results
     if (revealAnswer && showResult) {
       if (index === question.correctOptionIndex) {
+        // Correct answer is always green
         baseClass += "bg-green-600 border-2 border-green-400";
-      } else if (selectedOption === index && index !== question.correctOptionIndex) {
+      } else if (selectedOption === index) {
+        // Selected wrong answer is red
         baseClass += "bg-red-600 border-2 border-red-400";
+      } else {
+        // Other options remain neutral
+        baseClass += "bg-blue-800 border-2 border-yellow-400";
+      }
+    } else {
+      // Before answer is revealed
+      if (selectedOption === index) {
+        baseClass += "bg-orange-500 border-2 border-yellow-400 shadow-lg ";
+      } else {
+        baseClass += "bg-blue-800 hover:bg-blue-700 border-2 border-yellow-400 ";
       }
     }
     
