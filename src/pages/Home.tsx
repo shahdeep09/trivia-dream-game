@@ -1,38 +1,53 @@
 
 import { useState, useEffect } from "react";
-import { Team, SAMPLE_TEAMS } from "@/utils/gameUtils";
+import { Team } from "@/utils/gameUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { Trophy, Users } from "lucide-react";
+import { Trophy, Users, Settings, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { QuizConfig } from "./QuizSetup";
 
 const Home = () => {
   const [teams, setTeams] = useState<Team[]>([]);
+  const [currentQuizConfig, setCurrentQuizConfig] = useState<QuizConfig | null>(null);
   
   useEffect(() => {
-    // Load teams from localStorage or use sample data
-    const savedTeams = localStorage.getItem("millionaire-teams");
-    if (savedTeams) {
-      const loadedTeams: Team[] = JSON.parse(savedTeams);
-      // Ensure all teams have the new totalLifelinesUsed field
-      const teamsWithLifelines = loadedTeams.map(team => ({
-        ...team,
-        bonusPoints: team.bonusPoints || 0,
-        totalLifelinesUsed: team.totalLifelinesUsed || 0
+    // Load current quiz configuration
+    const savedConfig = localStorage.getItem("current-quiz-config");
+    if (savedConfig) {
+      const config: QuizConfig = JSON.parse(savedConfig);
+      setCurrentQuizConfig(config);
+      
+      // Generate teams based on quiz configuration
+      const configuredTeams: Team[] = config.teamNames.map((name, index) => ({
+        id: (index + 1).toString(),
+        name: name,
+        points: 0,
+        gamesPlayed: 0,
+        bonusPoints: 0,
+        totalLifelinesUsed: 0
       }));
-      setTeams(teamsWithLifelines);
+      
+      setTeams(configuredTeams);
+      
+      // Save teams to localStorage
+      localStorage.setItem("millionaire-teams", JSON.stringify(configuredTeams));
     } else {
-      // Initialize teams with bonus points and lifeline usage if they don't have it
-      const teamsWithExtras = SAMPLE_TEAMS.map(team => ({
-        ...team,
-        bonusPoints: team.bonusPoints || 0,
-        totalLifelinesUsed: team.totalLifelinesUsed || 0
-      }));
-      setTeams(teamsWithExtras);
+      // Load teams from localStorage if no quiz config
+      const savedTeams = localStorage.getItem("millionaire-teams");
+      if (savedTeams) {
+        const loadedTeams: Team[] = JSON.parse(savedTeams);
+        const teamsWithLifelines = loadedTeams.map(team => ({
+          ...team,
+          bonusPoints: team.bonusPoints || 0,
+          totalLifelinesUsed: team.totalLifelinesUsed || 0
+        }));
+        setTeams(teamsWithLifelines);
+      }
     }
   }, []);
   
@@ -66,23 +81,85 @@ const Home = () => {
       description: "The bonus points have been updated for this team.",
     });
   };
+
+  if (!currentQuizConfig) {
+    return (
+      <div className="min-h-screen bg-millionaire-dark text-millionaire-light">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center min-h-[60vh]">
+            <Card className="bg-millionaire-secondary border-millionaire-accent max-w-md w-full">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Settings className="w-16 h-16 text-millionaire-accent mb-4" />
+                <h2 className="text-xl font-semibold text-millionaire-gold mb-2">No Quiz Configured</h2>
+                <p className="text-millionaire-light mb-6 text-center">
+                  Please create or load a quiz configuration to start playing.
+                </p>
+                <div className="flex space-x-4">
+                  <Button
+                    asChild
+                    className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
+                  >
+                    <Link to="/setup">
+                      <Plus size={16} className="mr-2" />
+                      Create Quiz
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="border-millionaire-accent"
+                  >
+                    <Link to="/manager">
+                      <Settings size={16} className="mr-2" />
+                      Load Quiz
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-millionaire-dark text-millionaire-light">
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-millionaire-gold">Who Wants to Be a Millionaire</h1>
+            <h1 className="text-4xl font-bold text-millionaire-gold">{currentQuizConfig.samajName}</h1>
             <p className="text-millionaire-light mt-2">
-              Team Competition
+              Quiz Competition - {currentQuizConfig.numberOfQuestions} Questions
             </p>
           </div>
-          <Button
-            asChild
-            className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
-          >
-            <Link to="/game">Play Game</Link>
-          </Button>
+          <div className="flex items-center space-x-4">
+            {currentQuizConfig.logo && (
+              <img 
+                src={currentQuizConfig.logo} 
+                alt="Quiz Logo" 
+                className="w-16 h-16 object-cover rounded"
+              />
+            )}
+            <div className="flex space-x-2">
+              <Button
+                asChild
+                variant="outline"
+                className="border-millionaire-accent"
+              >
+                <Link to="/manager">
+                  <Settings size={16} className="mr-2" />
+                  Quiz Manager
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
+              >
+                <Link to="/game">Play Game</Link>
+              </Button>
+            </div>
+          </div>
         </div>
         
         <Tabs defaultValue="teams" className="w-full">

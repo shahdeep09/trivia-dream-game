@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import GameScreen, { GameResult } from "@/components/GameScreen";
@@ -12,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
+import { QuizConfig } from "./QuizSetup";
 
 const Index = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -19,14 +21,34 @@ const Index = () => {
   const [gameSettings, setGameSettings] = useState<GameSettings>(DEFAULT_GAME_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
+  const [currentQuizConfig, setCurrentQuizConfig] = useState<QuizConfig | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const teamId = queryParams.get("team");
   const initialTab = queryParams.get("tab") || "manager";
   
-  // Load saved questions from localStorage on initial render
+  // Load saved questions and quiz config on initial render
   useEffect(() => {
+    // Load quiz configuration
+    const savedConfig = localStorage.getItem("current-quiz-config");
+    if (savedConfig) {
+      const config: QuizConfig = JSON.parse(savedConfig);
+      setCurrentQuizConfig(config);
+      
+      // Update game settings based on quiz config
+      const updatedSettings = {
+        ...gameSettings,
+        lifelineNames: {
+          lifeline1: config.selectedLifelines.includes("fifty-fifty") ? "50:50" : "",
+          lifeline2: config.selectedLifelines.includes("audience-poll") ? "Audience Poll" : 
+                     config.selectedLifelines.includes("ask-expert") ? "Ask The Expert" : "",
+          lifeline3: config.selectedLifelines.includes("roll-dice") ? "Roll the Dice" : ""
+        }
+      };
+      setGameSettings(updatedSettings);
+    }
+    
     const savedQuestions = localStorage.getItem("millionaire-questions");
     if (savedQuestions) {
       setQuestions(JSON.parse(savedQuestions));
@@ -37,7 +59,8 @@ const Index = () => {
     
     const savedSettings = localStorage.getItem("millionaire-settings");
     if (savedSettings) {
-      setGameSettings(JSON.parse(savedSettings));
+      const loadedSettings = JSON.parse(savedSettings);
+      setGameSettings(prev => ({ ...prev, ...loadedSettings }));
     }
   }, []);
   
@@ -69,6 +92,18 @@ const Index = () => {
   };
   
   const handleStartGame = () => {
+    if (!currentQuizConfig) {
+      navigate("/setup");
+      return;
+    }
+    
+    // Limit questions to the configured number
+    const limitedQuestions = questions.slice(0, currentQuizConfig.numberOfQuestions);
+    if (limitedQuestions.length < currentQuizConfig.numberOfQuestions) {
+      alert(`You need at least ${currentQuizConfig.numberOfQuestions} questions to start the game. You currently have ${questions.length}.`);
+      return;
+    }
+    
     setIsPlaying(true);
   };
   
@@ -95,25 +130,65 @@ const Index = () => {
     // Replace current questions with imported ones
     setQuestions(importedQuestions);
   };
+
+  if (!currentQuizConfig) {
+    return (
+      <div className="min-h-screen bg-millionaire-dark text-millionaire-light">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center min-h-[60vh]">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-millionaire-gold mb-4">No Quiz Configuration Found</h1>
+              <p className="text-millionaire-light mb-6">Please create or load a quiz configuration to start playing.</p>
+              <div className="flex justify-center space-x-4">
+                <Button
+                  asChild
+                  className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
+                >
+                  <Link to="/setup">Create Quiz</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="border-millionaire-accent"
+                >
+                  <Link to="/">Back to Home</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-millionaire-dark text-millionaire-light">
       {isPlaying ? (
         <GameScreen
-          questions={questions}
+          questions={questions.slice(0, currentQuizConfig.numberOfQuestions)}
           settings={gameSettings}
           onGameEnd={handleGameEnd}
           onBackToAdmin={handleBackToAdmin}
           teamId={teamId}
+          quizConfig={currentQuizConfig}
         />
       ) : (
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-4xl font-bold text-millionaire-gold">Who Wants to Be a Millionaire</h1>
-              <p className="text-millionaire-light mt-2">
-                Question Manager {teamId ? `- Playing as Team ${teamId}` : ""}
-              </p>
+            <div className="flex items-center space-x-4">
+              {currentQuizConfig.logo && (
+                <img 
+                  src={currentQuizConfig.logo} 
+                  alt="Quiz Logo" 
+                  className="w-16 h-16 object-cover rounded"
+                />
+              )}
+              <div>
+                <h1 className="text-4xl font-bold text-millionaire-gold">{currentQuizConfig.samajName}</h1>
+                <p className="text-millionaire-light mt-2">
+                  Question Manager {teamId ? `- Playing as Team ${teamId}` : ""}
+                </p>
+              </div>
             </div>
             <div className="flex space-x-4">
               <Button
@@ -151,7 +226,10 @@ const Index = () => {
             </div>
           )}
           
-          <div className="mb-4 flex justify-end">
+          <div className="mb-4 flex justify-between items-center">
+            <div className="text-sm text-millionaire-light">
+              Quiz Configuration: {currentQuizConfig.numberOfQuestions} questions, {currentQuizConfig.numberOfTeams} teams
+            </div>
             <Button
               onClick={handleResetQuestions}
               variant="outline"
@@ -174,6 +252,7 @@ const Index = () => {
                 onUpdateQuestion={handleUpdateQuestion}
                 onDeleteQuestion={handleDeleteQuestion}
                 onStartGame={handleStartGame}
+                maxQuestions={currentQuizConfig.numberOfQuestions}
               />
             </TabsContent>
             
@@ -237,49 +316,12 @@ const Index = () => {
             </div>
             
             <div className="space-y-2">
-              <Label>Lifeline Names</Label>
-              <Input
-                value={gameSettings.lifelineNames.lifeline1}
-                onChange={(e) =>
-                  setGameSettings({
-                    ...gameSettings,
-                    lifelineNames: {
-                      ...gameSettings.lifelineNames,
-                      lifeline1: e.target.value,
-                    },
-                  })
-                }
-                placeholder="Lifeline 1"
-                className="mb-2 bg-millionaire-secondary"
-              />
-              <Input
-                value={gameSettings.lifelineNames.lifeline2}
-                onChange={(e) =>
-                  setGameSettings({
-                    ...gameSettings,
-                    lifelineNames: {
-                      ...gameSettings.lifelineNames,
-                      lifeline2: e.target.value,
-                    },
-                  })
-                }
-                placeholder="Lifeline 2"
-                className="mb-2 bg-millionaire-secondary"
-              />
-              <Input
-                value={gameSettings.lifelineNames.lifeline3}
-                onChange={(e) =>
-                  setGameSettings({
-                    ...gameSettings,
-                    lifelineNames: {
-                      ...gameSettings.lifelineNames,
-                      lifeline3: e.target.value,
-                    },
-                  })
-                }
-                placeholder="Lifeline 3"
-                className="bg-millionaire-secondary"
-              />
+              <Label>Available Lifelines (from Quiz Configuration)</Label>
+              <div className="text-sm text-millionaire-light">
+                {currentQuizConfig?.selectedLifelines.map(lifeline => (
+                  <div key={lifeline} className="capitalize">{lifeline.replace('-', ' ')}</div>
+                ))}
+              </div>
             </div>
           </div>
           
