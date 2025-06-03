@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Team } from "@/utils/gameUtils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -191,7 +190,7 @@ const Home = () => {
     loadTeamsData();
   }, [refreshKey]);
 
-  // Enhanced team data refresh with quiz isolation
+  // Simplified team data refresh without aggressive auto-refresh
   useEffect(() => {
     const handleTeamUpdate = (event?: CustomEvent) => {
       const detail = event?.detail;
@@ -216,37 +215,13 @@ const Home = () => {
       }
     };
 
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('Page visible, refreshing team data...');
-        loadTeamsData();
-        forceRefresh();
-      }
-    };
-
-    const handleFocus = () => {
-      console.log('Window focused, refreshing team data...');
-      loadTeamsData();
-      forceRefresh();
-    };
-
-    // Add multiple event listeners for better data synchronization
+    // Only add essential event listeners, removed auto-refresh interval and visibility/focus listeners
     window.addEventListener('teamDataUpdated', handleTeamUpdate as EventListener);
     window.addEventListener('storage', handleStorageChange);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    
-    // Also add a periodic refresh to catch any missed updates
-    const intervalId = setInterval(() => {
-      loadTeamsData();
-    }, 5000);
     
     return () => {
       window.removeEventListener('teamDataUpdated', handleTeamUpdate as EventListener);
       window.removeEventListener('storage', handleStorageChange);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-      clearInterval(intervalId);
     };
   }, [currentQuizConfig]);
   
