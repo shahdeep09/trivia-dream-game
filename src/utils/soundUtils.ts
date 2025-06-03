@@ -1,4 +1,3 @@
-
 // Sound utility functions for the game
 
 // Sound file mapping
@@ -195,11 +194,37 @@ export const stopFastForwardSound = (): void => {
   activeOscillators['fast-forward'] = [];
 };
 
-// Play a sound effect - now with sounds disabled
+// Play a sound effect - now with sounds enabled
 export const playSound = (
   soundName: 'correct' | 'wrong' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline' | 'fast-forward', 
   soundEnabled: boolean
 ): void => {
-  // All sounds are disabled as per user's request
-  return;
+  if (!soundEnabled) return;
+  
+  const sound = SOUNDS[soundName];
+  
+  if (sound && canPlaySound(sound)) {
+    try {
+      // Reset the audio to the beginning and play
+      sound.currentTime = 0;
+      sound.play().catch((error) => {
+        console.warn(`Could not play sound file for ${soundName}, using fallback:`, error);
+        // Use fallback sound if file fails to play
+        if (fallbackSounds[soundName]) {
+          fallbackSounds[soundName](1.0);
+        }
+      });
+    } catch (error) {
+      console.warn(`Error playing sound file for ${soundName}, using fallback:`, error);
+      // Use fallback sound if there's an error
+      if (fallbackSounds[soundName]) {
+        fallbackSounds[soundName](1.0);
+      }
+    }
+  } else {
+    // Use fallback sound when audio file is not available
+    if (fallbackSounds[soundName]) {
+      fallbackSounds[soundName](1.0);
+    }
+  }
 };
