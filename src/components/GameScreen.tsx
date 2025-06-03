@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import Question from "./Question";
@@ -83,41 +82,63 @@ const GameScreen = ({
 
   // Load team name when component mounts
   useEffect(() => {
-    const loadTeamName = async () => {
-      if (!teamId || !user) {
-        setTeamName("");
+    console.log('Loading team name for teamId:', teamId, 'user:', user?.id, 'quizConfig:', quizConfig?.id);
+    
+    if (!teamId || !user || !quizConfig?.id) {
+      console.log('Missing required data for loading team name');
+      setTeamName("");
+      return;
+    }
+
+    try {
+      // First try to load from Supabase
+      const { data: supabaseTeam, error } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', teamId)
+        .eq('quiz_id', quizConfig.id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!error && supabaseTeam) {
+        console.log('Team name loaded from Supabase:', supabaseTeam.name);
+        setTeamName(supabaseTeam.name);
         return;
       }
 
-      try {
-        // Try user-specific teams first
-        const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
-        const userTeams = localStorage.getItem(userSpecificKey);
-        
-        if (userTeams) {
-          const teams: Team[] = JSON.parse(userTeams);
-          const team = teams.find(t => t.id === teamId);
-          if (team) {
-            setTeamName(team.name);
-            return;
-          }
+      console.log('Team not found in Supabase, checking localStorage');
+      
+      // Fallback to localStorage with user-specific key
+      const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
+      const userTeams = localStorage.getItem(userSpecificKey);
+      
+      if (userTeams) {
+        const teams: Team[] = JSON.parse(userTeams);
+        const team = teams.find(t => t.id === teamId);
+        if (team) {
+          console.log('Team name loaded from user-specific localStorage:', team.name);
+          setTeamName(team.name);
+          return;
         }
-        
-        // Fallback to general teams
-        const savedTeams = localStorage.getItem("quiz-teams");
-        if (savedTeams) {
-          const teams: Team[] = JSON.parse(savedTeams);
-          const team = teams.find(t => t.id === teamId);
-          setTeamName(team ? team.name : "");
-        }
-      } catch (error) {
-        console.error("Error loading team name:", error);
-        setTeamName("");
       }
-    };
-
-    loadTeamName();
-  }, [teamId, user, quizConfig.id]);
+      
+      // Final fallback to general teams
+      const savedTeams = localStorage.getItem("quiz-teams");
+      if (savedTeams) {
+        const teams: Team[] = JSON.parse(savedTeams);
+        const team = teams.find(t => t.id === teamId);
+        if (team) {
+          console.log('Team name loaded from general localStorage:', team.name);
+          setTeamName(team.name);
+        } else {
+          console.log('Team not found in any storage');
+        }
+      }
+    } catch (error) {
+      console.error("Error loading team name:", error);
+      setTeamName("");
+    }
+  }, [teamId, user, quizConfig?.id]);
 
   // Prepare questions when game starts
   useEffect(() => {
@@ -271,11 +292,11 @@ const GameScreen = ({
   const updateTeamData = async (teamToUpdate: Team, pointsToAdd: number) => {
     console.log('Updating team data:', teamToUpdate.name, 'Adding points:', pointsToAdd);
     
-    if (!user) {
-      console.error('No authenticated user found');
+    if (!user || !quizConfig?.id) {
+      console.error('No authenticated user or quiz config found');
       toast({
         title: "Error",
-        description: "User not authenticated",
+        description: "User not authenticated or no quiz configuration",
         variant: "destructive"
       });
       return;
@@ -290,34 +311,32 @@ const GameScreen = ({
       };
 
       // Update in Supabase with proper user isolation
-      if (quizConfig?.id && teamId) {
-        console.log('Updating team in Supabase:', teamId, 'Quiz:', quizConfig.id, 'User:', user.id);
-        const { error } = await supabase
-          .from('teams')
-          .update({
-            points: updatedTeam.points,
-            games_played: updatedTeam.gamesPlayed,
-            total_lifelines_used: updatedTeam.totalLifelinesUsed,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', teamId)
-          .eq('quiz_id', quizConfig.id)
-          .eq('user_id', user.id);
+      console.log('Updating team in Supabase:', teamId, 'Quiz:', quizConfig.id, 'User:', user.id);
+      const { error } = await supabase
+        .from('teams')
+        .update({
+          points: updatedTeam.points,
+          games_played: updatedTeam.gamesPlayed,
+          total_lifelines_used: updatedTeam.totalLifelinesUsed,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', teamId)
+        .eq('quiz_id', quizConfig.id)
+        .eq('user_id', user.id);
 
-        if (error) {
-          console.error('Error updating team in Supabase:', error);
-          toast({
-            title: "Error",
-            description: "Failed to save points to database",
-            variant: "destructive"
-          });
-        } else {
-          console.log('Team updated in Supabase successfully');
-          toast({
-            title: "Points Saved",
-            description: `${pointsToAdd} points added to ${teamToUpdate.name}`,
-          });
-        }
+      if (error) {
+        console.error('Error updating team in Supabase:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save points to database",
+          variant: "destructive"
+        });
+      } else {
+        console.log('Team updated in Supabase successfully');
+        toast({
+          title: "Points Saved",
+          description: `${pointsToAdd} points added to ${teamToUpdate.name}`,
+        });
       }
 
       // Update localStorage with user-specific key
@@ -348,6 +367,7 @@ const GameScreen = ({
             } 
           });
           window.dispatchEvent(customEvent);
+          console.log('Team data updated in localStorage and event dispatched');
         }
       }
     } catch (error) {
@@ -364,16 +384,50 @@ const GameScreen = ({
     setResultDialogOpen(false);
     setShowConfetti(false);
 
+    console.log('Game ending, saving points. TeamId:', teamId, 'Points:', cumulativePoints);
+
     // Update team data with the new function
-    if (teamId && user) {
-      const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
-      const savedTeams = localStorage.getItem(userSpecificKey) || localStorage.getItem("quiz-teams");
-      if (savedTeams) {
-        const teams: Team[] = JSON.parse(savedTeams);
-        const team = teams.find(t => t.id === teamId);
-        if (team) {
+    if (teamId && user && quizConfig?.id) {
+      try {
+        // Try to get team from Supabase first
+        const { data: supabaseTeam, error } = await supabase
+          .from('teams')
+          .select('*')
+          .eq('id', teamId)
+          .eq('quiz_id', quizConfig.id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!error && supabaseTeam) {
+          const team: Team = {
+            id: supabaseTeam.id,
+            name: supabaseTeam.name,
+            points: supabaseTeam.points || 0,
+            gamesPlayed: supabaseTeam.games_played || 0,
+            bonusPoints: supabaseTeam.bonus_points || 0,
+            totalLifelinesUsed: supabaseTeam.total_lifelines_used || 0
+          };
+          console.log('Found team in Supabase, updating:', team);
           await updateTeamData(team, cumulativePoints);
+        } else {
+          // Fallback to localStorage
+          console.log('Team not found in Supabase, checking localStorage');
+          const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
+          const savedTeams = localStorage.getItem(userSpecificKey) || localStorage.getItem("quiz-teams");
+          
+          if (savedTeams) {
+            const teams: Team[] = JSON.parse(savedTeams);
+            const team = teams.find(t => t.id === teamId);
+            if (team) {
+              console.log('Found team in localStorage, updating:', team);
+              await updateTeamData(team, cumulativePoints);
+            } else {
+              console.error('Team not found in any storage');
+            }
+          }
         }
+      } catch (error) {
+        console.error('Error finding team for update:', error);
       }
     }
     
@@ -510,7 +564,7 @@ const GameScreen = ({
           {teamName && (
             <div className="bg-millionaire-secondary px-4 py-2 rounded-lg text-center">
               <span className="text-millionaire-gold font-bold mr-2">Team:</span>
-              <span>{teamName}</span>
+              <span className="text-white font-medium">{teamName}</span>
             </div>
           )}
           
@@ -596,7 +650,7 @@ const GameScreen = ({
                 </p>
                 {teamName && (
                   <p className="text-lg text-millionaire-accent">
-                    Playing as: <span className="font-bold">{teamName}</span>
+                    Playing as: <span className="font-bold text-millionaire-gold">{teamName}</span>
                   </p>
                 )}
               </div>

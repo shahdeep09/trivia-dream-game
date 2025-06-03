@@ -54,6 +54,26 @@ const Home = () => {
     loadQuizData();
   }, [refreshKey, user]);
 
+  // Listen for team data updates from the game screen
+  useEffect(() => {
+    const handleTeamDataUpdate = async (event: CustomEvent) => {
+      console.log('Team data update event received:', event.detail);
+      const { quizId, userId } = event.detail;
+      
+      // Only refresh if it's for the current user and quiz
+      if (user?.id === userId && currentQuizConfig?.id === quizId) {
+        console.log('Refreshing teams due to update event');
+        setRefreshKey(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('teamDataUpdated', handleTeamDataUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('teamDataUpdated', handleTeamDataUpdate as EventListener);
+    };
+  }, [user?.id, currentQuizConfig?.id]);
+
   // Initialize teams from quiz configuration for current user only
   const initializeTeamsFromConfig = async (config: QuizConfig) => {
     if (!user) {
@@ -299,13 +319,11 @@ const Home = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="teams">
-            <TeamsTab 
-              teams={teams}
-              refreshKey={refreshKey}
-              calculateTotalPoints={calculateTotalPoints}
-            />
-          </TabsContent>
+          <TeamsTab 
+            teams={teams}
+            refreshKey={refreshKey}
+            calculateTotalPoints={calculateTotalPoints}
+          />
 
           <PointsTable 
             teams={teams}
