@@ -421,29 +421,35 @@ const GameScreen = ({
           </div>
         </div>
 
-        {/* Lifelines in the center */}
+        {/* Lifelines in the center - only show selected ones */}
         <div className="flex justify-center gap-6">
-          <Lifeline
-            type="fifty-fifty"
-            isUsed={lifelinesUsed["fifty-fifty"]}
-            onUse={handleUseLifeline}
-            currentQuestion={currentQuestion}
-            settings={settings}
-          />
-          <Lifeline
-            type="phone-friend"
-            isUsed={lifelinesUsed["phone-friend"]}
-            onUse={handleUseLifeline}
-            currentQuestion={currentQuestion}
-            settings={settings}
-          />
-          <Lifeline
-            type="ask-audience"
-            isUsed={lifelinesUsed["ask-audience"]}
-            onUse={handleUseLifeline}
-            currentQuestion={currentQuestion}
-            settings={settings}
-          />
+          {quizConfig.selectedLifelines?.lifeline1 && (
+            <Lifeline
+              type="fifty-fifty"
+              isUsed={lifelinesUsed["fifty-fifty"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          )}
+          {quizConfig.selectedLifelines?.lifeline2 && (
+            <Lifeline
+              type="phone-friend"
+              isUsed={lifelinesUsed["phone-friend"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          )}
+          {quizConfig.selectedLifelines?.lifeline3 && (
+            <Lifeline
+              type="ask-audience"
+              isUsed={lifelinesUsed["ask-audience"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          )}
         </div>
         
         <div className="flex gap-2">

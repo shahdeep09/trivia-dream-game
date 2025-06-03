@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { GameSettings, Question, applyFiftyFifty, phoneAFriend, askTheAudience } from "@/utils/gameUtils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from "lucide-react";
 
 interface LifelineProps {
   type: "fifty-fifty" | "phone-friend" | "ask-audience";
@@ -30,6 +31,16 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
   };
 
   const getLifelineIcon = () => {
+    const lifelineName = getLifelineName().toLowerCase();
+    
+    // Check if it's a roll dice lifeline
+    if (lifelineName.includes('dice') || lifelineName.includes('roll')) {
+      const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
+      const randomDice = diceIcons[Math.floor(Math.random() * diceIcons.length)];
+      const DiceIcon = randomDice;
+      return <DiceIcon size={20} />;
+    }
+    
     switch (type) {
       case "fifty-fifty":
         return (
@@ -51,29 +62,51 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
     if (isUsed) return;
 
     let result;
+    const lifelineName = getLifelineName().toLowerCase();
+    
     switch (type) {
       case "fifty-fifty":
         result = applyFiftyFifty(currentQuestion);
         onUse(type, result);
         break;
       case "phone-friend":
-        result = phoneAFriend(currentQuestion);
-        setFriendResponse(result);
-        setDialogOpen(true);
-        onUse(type, result);
+        // Check if it's ask the expert or phone a friend
+        if (lifelineName.includes('expert')) {
+          // For ask the expert, don't show popup, just use the lifeline
+          result = phoneAFriend(currentQuestion);
+          onUse(type, result);
+        } else {
+          result = phoneAFriend(currentQuestion);
+          setFriendResponse(result);
+          setDialogOpen(true);
+          onUse(type, result);
+        }
         break;
       case "ask-audience":
-        result = askTheAudience(currentQuestion);
-        setAudienceResults(result);
-        setDialogOpen(true);
-        onUse(type, result);
+        // Check if it's audience poll
+        if (lifelineName.includes('poll')) {
+          // For audience poll, don't show popup, just use the lifeline
+          result = askTheAudience(currentQuestion);
+          onUse(type, result);
+        } else {
+          result = askTheAudience(currentQuestion);
+          setAudienceResults(result);
+          setDialogOpen(true);
+          onUse(type, result);
+        }
         break;
     }
   };
 
   const renderLifelineDialog = () => {
+    const lifelineName = getLifelineName().toLowerCase();
+    
     switch (type) {
       case "phone-friend":
+        // Only show dialog for actual phone a friend, not ask the expert
+        if (lifelineName.includes('expert')) {
+          return null;
+        }
         return (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogContent className="bg-millionaire-primary border-millionaire-accent">
@@ -89,6 +122,10 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
           </Dialog>
         );
       case "ask-audience":
+        // Only show dialog for actual ask the audience, not audience poll
+        if (lifelineName.includes('poll')) {
+          return null;
+        }
         return (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogContent className="bg-millionaire-primary border-millionaire-accent">
