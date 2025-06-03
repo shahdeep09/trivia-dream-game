@@ -11,6 +11,7 @@ import { useWindowSize } from "@/hooks/use-window-size";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Lifeline from "./Lifeline";
 import { QuizConfig } from "@/types/quiz";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GameScreenProps {
   questions: QuestionType[];
