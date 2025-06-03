@@ -82,62 +82,66 @@ const GameScreen = ({
 
   // Load team name when component mounts
   useEffect(() => {
-    console.log('Loading team name for teamId:', teamId, 'user:', user?.id, 'quizConfig:', quizConfig?.id);
-    
-    if (!teamId || !user || !quizConfig?.id) {
-      console.log('Missing required data for loading team name');
-      setTeamName("");
-      return;
-    }
-
-    try {
-      // First try to load from Supabase
-      const { data: supabaseTeam, error } = await supabase
-        .from('teams')
-        .select('name')
-        .eq('id', teamId)
-        .eq('quiz_id', quizConfig.id)
-        .eq('user_id', user.id)
-        .single();
-
-      if (!error && supabaseTeam) {
-        console.log('Team name loaded from Supabase:', supabaseTeam.name);
-        setTeamName(supabaseTeam.name);
+    const loadTeamName = async () => {
+      console.log('Loading team name for teamId:', teamId, 'user:', user?.id, 'quizConfig:', quizConfig?.id);
+      
+      if (!teamId || !user || !quizConfig?.id) {
+        console.log('Missing required data for loading team name');
+        setTeamName("");
         return;
       }
 
-      console.log('Team not found in Supabase, checking localStorage');
-      
-      // Fallback to localStorage with user-specific key
-      const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
-      const userTeams = localStorage.getItem(userSpecificKey);
-      
-      if (userTeams) {
-        const teams: Team[] = JSON.parse(userTeams);
-        const team = teams.find(t => t.id === teamId);
-        if (team) {
-          console.log('Team name loaded from user-specific localStorage:', team.name);
-          setTeamName(team.name);
+      try {
+        // First try to load from Supabase
+        const { data: supabaseTeam, error } = await supabase
+          .from('teams')
+          .select('name')
+          .eq('id', teamId)
+          .eq('quiz_id', quizConfig.id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!error && supabaseTeam) {
+          console.log('Team name loaded from Supabase:', supabaseTeam.name);
+          setTeamName(supabaseTeam.name);
           return;
         }
-      }
-      
-      // Final fallback to general teams
-      const savedTeams = localStorage.getItem("quiz-teams");
-      if (savedTeams) {
-        const teams: Team[] = JSON.parse(savedTeams);
-        const team = teams.find(t => t.id === teamId);
-        if (team) {
-          console.log('Team name loaded from general localStorage:', team.name);
-          setTeamName(team.name);
-        } else {
-          console.log('Team not found in any storage');
+
+        console.log('Team not found in Supabase, checking localStorage');
+        
+        // Fallback to localStorage with user-specific key
+        const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
+        const userTeams = localStorage.getItem(userSpecificKey);
+        
+        if (userTeams) {
+          const teams: Team[] = JSON.parse(userTeams);
+          const team = teams.find(t => t.id === teamId);
+          if (team) {
+            console.log('Team name loaded from user-specific localStorage:', team.name);
+            setTeamName(team.name);
+            return;
+          }
         }
+        
+        // Final fallback to general teams
+        const savedTeams = localStorage.getItem("quiz-teams");
+        if (savedTeams) {
+          const teams: Team[] = JSON.parse(savedTeams);
+          const team = teams.find(t => t.id === teamId);
+          if (team) {
+            console.log('Team name loaded from general localStorage:', team.name);
+            setTeamName(team.name);
+          } else {
+            console.log('Team not found in any storage');
+          }
+        }
+      } catch (error) {
+        console.error("Error loading team name:", error);
+        setTeamName("");
       }
-    } catch (error) {
-      console.error("Error loading team name:", error);
-      setTeamName("");
-    }
+    };
+
+    loadTeamName();
   }, [teamId, user, quizConfig?.id]);
 
   // Prepare questions when game starts
