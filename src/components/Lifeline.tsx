@@ -42,12 +42,12 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
     }
     
     // Check for Ask the Expert
-    if (lifelineName.includes('expert') || lifelineName.includes('ask')) {
+    if (lifelineName.includes('expert')) {
       return "👨‍🎓";
     }
     
     // Check for Audience Poll
-    if (lifelineName.includes('poll') || lifelineName.includes('audience')) {
+    if (lifelineName.includes('poll')) {
       return "📊";
     }
     
@@ -83,15 +83,16 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
         // Only apply fifty-fifty logic for actual 50:50 lifeline
         if (lifelineName.includes('50') || lifelineName === 'fifty-fifty') {
           result = applyFiftyFifty(currentQuestion);
-        } else {
+          onUse(type, result);
+        } else if (lifelineName.includes('dice') || lifelineName.includes('roll')) {
           // For Roll the Dice, just mark as used without any result
           result = null;
+          onUse(type, result);
         }
-        onUse(type, result);
         break;
       case "phone-friend":
         // For ask the expert, just mark as used - no dialog
-        if (lifelineName.includes('expert') || lifelineName.includes('ask')) {
+        if (lifelineName.includes('expert')) {
           result = null;
           onUse(type, result);
         } else {
@@ -104,7 +105,7 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
         break;
       case "ask-audience":
         // For audience poll, just mark as used - no dialog
-        if (lifelineName.includes('poll') || lifelineName.includes('audience')) {
+        if (lifelineName.includes('poll')) {
           result = null;
           onUse(type, result);
         } else {
@@ -124,7 +125,7 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
     switch (type) {
       case "phone-friend":
         // Only show dialog for actual phone a friend, not ask the expert
-        if (lifelineName.includes('expert') || lifelineName.includes('ask')) {
+        if (lifelineName.includes('expert')) {
           return null;
         }
         return (
@@ -143,7 +144,7 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
         );
       case "ask-audience":
         // Only show dialog for actual ask the audience, not audience poll
-        if (lifelineName.includes('poll') || lifelineName.includes('audience')) {
+        if (lifelineName.includes('poll')) {
           return null;
         }
         return (

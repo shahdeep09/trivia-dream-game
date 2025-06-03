@@ -230,44 +230,65 @@ const GameScreen = ({
         
         if (savedTeams) {
           const teams: Team[] = JSON.parse(savedTeams);
-          const updatedTeams = teams.map(team => {
-            if (team.id === teamId) {
-              const updatedTeam = {
-                ...team,
-                points: team.points + cumulativePoints,
-                gamesPlayed: team.gamesPlayed + 1,
-                totalLifelinesUsed: (team.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
-              };
-              console.log('Updating team:', team.name, 'Old points:', team.points, 'Points to add:', cumulativePoints, 'New total:', updatedTeam.points);
-              return updatedTeam;
+          const teamIndex = teams.findIndex(team => team.id === teamId);
+          
+          if (teamIndex !== -1) {
+            // Update the existing team
+            const updatedTeams = [...teams];
+            updatedTeams[teamIndex] = {
+              ...updatedTeams[teamIndex],
+              points: updatedTeams[teamIndex].points + cumulativePoints,
+              gamesPlayed: updatedTeams[teamIndex].gamesPlayed + 1,
+              totalLifelinesUsed: (updatedTeams[teamIndex].totalLifelinesUsed || 0) + totalLifelinesUsedInGame
+            };
+            
+            console.log('Updating team:', updatedTeams[teamIndex].name, 'Old points:', teams[teamIndex].points, 'Points to add:', cumulativePoints, 'New total:', updatedTeams[teamIndex].points);
+            
+            localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
+            
+            // Update team in Supabase
+            if (quizConfig?.id) {
+              supabase
+                .from('teams')
+                .update({
+                  points: updatedTeams[teamIndex].points,
+                  games_played: updatedTeams[teamIndex].gamesPlayed,
+                  total_lifelines_used: updatedTeams[teamIndex].totalLifelinesUsed
+                })
+                .eq('id', teamId)
+                .then(({ error }) => {
+                  if (error) {
+                    console.error('Error updating team in Supabase:', error);
+                  } else {
+                    console.log('Team updated in Supabase successfully');
+                  }
+                });
             }
-            return team;
-          });
-          
-          localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
-          
-          const verifyTeams = localStorage.getItem("millionaire-teams");
-          console.log('Verified teams after save:', verifyTeams);
-          
-          const customEvent = new CustomEvent('teamDataUpdated', { 
-            detail: { 
-              teamId, 
-              pointsAdded: cumulativePoints, 
-              gamesPlayed: 1, 
-              lifelinesUsed: totalLifelinesUsedInGame,
-              timestamp: Date.now()
-            } 
-          });
-          
-          window.dispatchEvent(customEvent);
-          
-          window.dispatchEvent(new StorageEvent('storage', {
-            key: 'millionaire-teams',
-            newValue: JSON.stringify(updatedTeams),
-            oldValue: savedTeams,
-            storageArea: localStorage
-          }));
-          
+            
+            const verifyTeams = localStorage.getItem("millionaire-teams");
+            console.log('Verified teams after save:', verifyTeams);
+            
+            const customEvent = new CustomEvent('teamDataUpdated', { 
+              detail: { 
+                teamId, 
+                pointsAdded: cumulativePoints, 
+                gamesPlayed: 1, 
+                lifelinesUsed: totalLifelinesUsedInGame,
+                timestamp: Date.now()
+              } 
+            });
+            
+            window.dispatchEvent(customEvent);
+            
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: 'millionaire-teams',
+              newValue: JSON.stringify(updatedTeams),
+              oldValue: savedTeams,
+              storageArea: localStorage
+            }));
+          } else {
+            console.error('Team not found in localStorage teams:', teamId);
+          }
         } else {
           console.error('No teams found in localStorage');
         }
@@ -286,7 +307,7 @@ const GameScreen = ({
     console.log('Calling onGameEnd with result:', gameResult);
     onGameEnd(gameResult);
     
-    // Fixed: Redirect to home page (Teams tab) instead of upload page
+    // Redirect to home page (Teams tab)
     navigate('/');
   };
 

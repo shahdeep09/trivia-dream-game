@@ -37,6 +37,19 @@ const Home = () => {
     const config: QuizConfig = JSON.parse(savedConfig);
     setCurrentQuizConfig(config);
 
+    // Try to load from localStorage first for immediate UI update
+    const savedTeams = localStorage.getItem("millionaire-teams");
+    if (savedTeams) {
+      const teams: Team[] = JSON.parse(savedTeams);
+      // Filter teams that belong to current quiz
+      const currentQuizTeams = teams.filter(team => 
+        config.teamNames.includes(team.name)
+      );
+      if (currentQuizTeams.length > 0) {
+        setTeams(currentQuizTeams);
+      }
+    }
+
     try {
       // Load teams from Supabase for this specific quiz
       const { data: teamsData, error } = await supabase
@@ -47,8 +60,10 @@ const Home = () => {
 
       if (error) {
         console.error('Error loading teams from Supabase:', error);
-        // Fallback to creating teams from config
-        createTeamsFromConfig(config);
+        // Fallback to creating teams from config if not exists in localStorage
+        if (!savedTeams) {
+          createTeamsFromConfig(config);
+        }
       } else if (teamsData && teamsData.length > 0) {
         // Convert Supabase data to Team format
         const formattedTeams: Team[] = teamsData.map(team => ({
@@ -66,12 +81,17 @@ const Home = () => {
         // Also save to localStorage as backup
         localStorage.setItem("millionaire-teams", JSON.stringify(formattedTeams));
       } else {
-        // No teams found, create them
-        createTeamsFromConfig(config);
+        // No teams found, create them only if not exists in localStorage
+        if (!savedTeams) {
+          createTeamsFromConfig(config);
+        }
       }
     } catch (error) {
       console.error('Error loading teams:', error);
-      createTeamsFromConfig(config);
+      // Only create from config if no localStorage data
+      if (!savedTeams) {
+        createTeamsFromConfig(config);
+      }
     }
   };
 
