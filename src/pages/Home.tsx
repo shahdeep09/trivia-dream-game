@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,7 +38,7 @@ const Home = () => {
   };
 
   const calculateTotalPoints = (team: Team): number => {
-    return team.score || 0;
+    return (team.points || 0) + (team.bonusPoints || 0);
   };
 
   if (!currentQuizConfig) {

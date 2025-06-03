@@ -55,6 +55,29 @@ export const SAMPLE_TEAMS: Team[] = [
   { id: "10", name: "Smart Sharks", points: 0, gamesPlayed: 0, totalLifelinesUsed: 0 },
 ];
 
+// Load teams from localStorage or return sample teams
+export function loadTeams(): Team[] {
+  try {
+    const storedTeams = localStorage.getItem("quiz-teams");
+    if (storedTeams) {
+      return JSON.parse(storedTeams);
+    }
+    return SAMPLE_TEAMS;
+  } catch (error) {
+    console.error("Error loading teams:", error);
+    return SAMPLE_TEAMS;
+  }
+}
+
+// Save teams to localStorage
+export function saveTeams(teams: Team[]): void {
+  try {
+    localStorage.setItem("quiz-teams", JSON.stringify(teams));
+  } catch (error) {
+    console.error("Error saving teams:", error);
+  }
+}
+
 // New points and timer logic based on question levels
 export const getQuestionConfig = (questionIndex: number) => {
   if (questionIndex < 5) {
