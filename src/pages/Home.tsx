@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import QuizHeader from "@/components/home/QuizHeader";
@@ -8,15 +8,41 @@ import NoQuizConfigured from "@/components/home/NoQuizConfigured";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { useQuizConfig } from "@/hooks/useQuizConfig";
 import { useNavigate } from "react-router-dom";
+import { QuizConfig } from "@/types/quiz";
+import { Team, loadTeams } from "@/utils/gameUtils";
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState("teams");
+  const [currentQuizConfig, setCurrentQuizConfig] = useState<QuizConfig | null>(null);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
 
-  const quizConfig = localStorage.getItem("current-quiz-config");
-  const hasQuizConfig = !!quizConfig;
+  useEffect(() => {
+    const loadQuizData = () => {
+      const quizConfig = localStorage.getItem("current-quiz-config");
+      if (quizConfig) {
+        const config = JSON.parse(quizConfig);
+        setCurrentQuizConfig(config);
+        
+        // Load teams for this quiz
+        const loadedTeams = loadTeams();
+        setTeams(loadedTeams);
+      }
+    };
 
-  if (!hasQuizConfig) {
+    loadQuizData();
+  }, [refreshKey]);
+
+  const forceRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
+  const calculateTotalPoints = (team: Team): number => {
+    return team.score || 0;
+  };
+
+  if (!currentQuizConfig) {
     return <NoQuizConfigured />;
   }
 
@@ -43,7 +69,10 @@ const Home = () => {
           </div>
         </div>
 
-        <QuizHeader />
+        <QuizHeader 
+          currentQuizConfig={currentQuizConfig}
+          forceRefresh={forceRefresh}
+        />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
           <TabsList className="grid w-full grid-cols-3 bg-millionaire-dark border border-millionaire-accent">
@@ -68,7 +97,11 @@ const Home = () => {
           </TabsList>
 
           <TabsContent value="teams">
-            <TeamsTab />
+            <TeamsTab 
+              teams={teams}
+              refreshKey={refreshKey}
+              calculateTotalPoints={calculateTotalPoints}
+            />
           </TabsContent>
 
           <TabsContent value="questions">
