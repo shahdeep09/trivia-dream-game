@@ -272,11 +272,11 @@ const Home = () => {
                   <CardContent>
                     <div className="flex justify-between items-center">
                       <div className="space-y-1">
-                        <p><span className="font-medium text-white">Game Points:</span> <span className="font-bold text-millionaire-accent">{team.points || 0}</span></p>
+                        <p><span className="font-medium text-white">Game Points:</span> <span className="font-bold text-white">{team.points || 0}</span></p>
                         <p><span className="font-medium text-white">Bonus Points:</span> <span className="font-bold text-white">{team.bonusPoints || 0}</span></p>
                         <p><span className="font-medium text-millionaire-gold">Total Points:</span> <span className="font-bold text-millionaire-gold text-lg">{calculateTotalPoints(team)}</span></p>
                         <p><span className="font-medium text-white">Games Played:</span> <span className="font-bold text-white">{team.gamesPlayed || 0}</span></p>
-                        <p><span className="font-medium text-white">Lifelines Used:</span> <span className="font-bold text-millionaire-accent">{team.totalLifelinesUsed || 0}</span></p>
+                        <p><span className="font-medium text-white">Lifelines Used:</span> <span className="font-bold text-white">{team.totalLifelinesUsed || 0}</span></p>
                       </div>
                       <Button
                         asChild
@@ -317,7 +317,7 @@ const Home = () => {
                         <TableRow key={`${team.id}-${refreshKey}-table`} className="border-b border-millionaire-accent">
                           <TableCell className="font-medium text-white">{index + 1}</TableCell>
                           <TableCell className="font-medium text-white">{team.name}</TableCell>
-                          <TableCell className="font-bold text-millionaire-accent text-lg">{team.points || 0}</TableCell>
+                          <TableCell className="font-bold text-white text-lg">{team.points || 0}</TableCell>
                           <TableCell>
                             <Input
                               type="number"
@@ -331,7 +331,7 @@ const Home = () => {
                             {calculateTotalPoints(team)}
                           </TableCell>
                           <TableCell className="font-bold text-lg text-white">{team.gamesPlayed || 0}</TableCell>
-                          <TableCell className="font-bold text-millionaire-accent text-lg">
+                          <TableCell className="font-bold text-white text-lg">
                             {team.totalLifelinesUsed || 0}
                           </TableCell>
                           <TableCell>

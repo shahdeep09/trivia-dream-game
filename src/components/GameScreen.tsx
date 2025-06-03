@@ -244,14 +244,11 @@ const GameScreen = ({
             return team;
           });
           
-          // Force save to localStorage multiple times to ensure persistence
           localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
           
-          // Verify the save worked
           const verifyTeams = localStorage.getItem("millionaire-teams");
           console.log('Verified teams after save:', verifyTeams);
           
-          // Dispatch multiple events to force UI updates
           const customEvent = new CustomEvent('teamDataUpdated', { 
             detail: { 
               teamId, 
@@ -264,18 +261,12 @@ const GameScreen = ({
           
           window.dispatchEvent(customEvent);
           
-          // Also dispatch storage event
           window.dispatchEvent(new StorageEvent('storage', {
             key: 'millionaire-teams',
             newValue: JSON.stringify(updatedTeams),
             oldValue: savedTeams,
             storageArea: localStorage
           }));
-          
-          // Force page refresh after a delay to ensure data is visible
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
           
         } else {
           console.error('No teams found in localStorage');
@@ -294,6 +285,9 @@ const GameScreen = ({
     
     console.log('Calling onGameEnd with result:', gameResult);
     onGameEnd(gameResult);
+    
+    // Fixed: Redirect to home page (Teams tab) instead of upload page
+    navigate('/');
   };
 
   const handleWalkAway = () => {
@@ -421,9 +415,9 @@ const GameScreen = ({
           </div>
         </div>
 
-        {/* Lifelines in the center - only show selected ones */}
+        {/* Lifelines in the center - Fixed: properly check selected lifelines */}
         <div className="flex justify-center gap-6">
-          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('lifeline1') && (
+          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('fifty-fifty') && (
             <Lifeline
               type="fifty-fifty"
               isUsed={lifelinesUsed["fifty-fifty"]}
@@ -432,7 +426,7 @@ const GameScreen = ({
               settings={settings}
             />
           )}
-          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('lifeline2') && (
+          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('phone-friend') && (
             <Lifeline
               type="phone-friend"
               isUsed={lifelinesUsed["phone-friend"]}
@@ -441,10 +435,37 @@ const GameScreen = ({
               settings={settings}
             />
           )}
-          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('lifeline3') && (
+          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('ask-audience') && (
             <Lifeline
               type="ask-audience"
               isUsed={lifelinesUsed["ask-audience"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          )}
+          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('ask-expert') && (
+            <Lifeline
+              type="phone-friend"
+              isUsed={lifelinesUsed["phone-friend"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          )}
+          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('audience-poll') && (
+            <Lifeline
+              type="ask-audience"
+              isUsed={lifelinesUsed["ask-audience"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          )}
+          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('roll-dice') && (
+            <Lifeline
+              type="fifty-fifty"
+              isUsed={lifelinesUsed["fifty-fifty"]}
               onUse={handleUseLifeline}
               currentQuestion={currentQuestion}
               settings={settings}
