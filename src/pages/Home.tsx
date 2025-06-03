@@ -2,9 +2,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { QuizHeader } from "@/components/home/QuizHeader";
-import { TeamsTab } from "@/components/home/TeamsTab";
-import { NoQuizConfigured } from "@/components/home/NoQuizConfigured";
+import QuizHeader from "@/components/home/QuizHeader";
+import TeamsTab from "@/components/home/TeamsTab";
+import NoQuizConfigured from "@/components/home/NoQuizConfigured";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { useQuizConfig } from "@/hooks/useQuizConfig";
 import { useNavigate } from "react-router-dom";
