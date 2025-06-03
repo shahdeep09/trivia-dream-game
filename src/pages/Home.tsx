@@ -52,16 +52,27 @@ const Home = () => {
     }
   }, [refreshKey]);
 
-  // Listen for team data updates
+  // Listen for team data updates and storage events
   useEffect(() => {
     const handleTeamUpdate = () => {
       console.log('Team data update event received, refreshing...');
-      // Force refresh by updating the key
       setRefreshKey(prev => prev + 1);
     };
 
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'millionaire-teams') {
+        console.log('Storage change detected, refreshing team data...');
+        setRefreshKey(prev => prev + 1);
+      }
+    };
+
     window.addEventListener('teamDataUpdated', handleTeamUpdate);
-    return () => window.removeEventListener('teamDataUpdated', handleTeamUpdate);
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('teamDataUpdated', handleTeamUpdate);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
   
   // Save teams to localStorage whenever they change

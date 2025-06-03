@@ -215,7 +215,7 @@ const GameScreen = ({
     setResultDialogOpen(false);
     setShowConfetti(false);
 
-    // Enhanced team data saving with proper state management
+    // Save team data immediately and ensure it persists
     if (teamId) {
       const savedTeams = localStorage.getItem("millionaire-teams");
       if (savedTeams) {
@@ -233,12 +233,16 @@ const GameScreen = ({
           }
           return team;
         });
+        
+        // Save to localStorage immediately
         localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
         console.log('All teams after update:', updatedTeams);
         
-        // Dispatch custom event to trigger UI refresh
-        window.dispatchEvent(new CustomEvent('teamDataUpdated', { 
-          detail: { teamId, pointsAdded: cumulativePoints } 
+        // Force a synchronous storage event
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'millionaire-teams',
+          newValue: JSON.stringify(updatedTeams),
+          oldValue: savedTeams
         }));
       }
     }
@@ -253,10 +257,10 @@ const GameScreen = ({
     console.log('Calling onGameEnd with result:', gameResult);
     onGameEnd(gameResult);
     
-    // Small delay to ensure state is saved before navigation
+    // Navigate after a small delay to ensure data is saved
     setTimeout(() => {
       navigate('/');
-    }, 100);
+    }, 200);
   };
 
   const handleWalkAway = () => {
