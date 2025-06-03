@@ -220,41 +220,68 @@ const GameScreen = ({
     setResultDialogOpen(false);
     setShowConfetti(false);
 
-    // Update team data with comprehensive data persistence
+    // Update team data with better error handling and forced persistence
     if (teamId) {
-      const savedTeams = localStorage.getItem("millionaire-teams");
-      if (savedTeams) {
-        const teams: Team[] = JSON.parse(savedTeams);
-        const updatedTeams = teams.map(team => {
-          if (team.id === teamId) {
-            const updatedTeam = {
-              ...team,
-              points: team.points + cumulativePoints,
-              gamesPlayed: team.gamesPlayed + 1,
-              totalLifelinesUsed: (team.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
-            };
-            console.log('Updating team data:', updatedTeam);
-            return updatedTeam;
-          }
-          return team;
-        });
+      console.log('Saving game results for team:', teamId, 'Points won:', cumulativePoints);
+      
+      try {
+        const savedTeams = localStorage.getItem("millionaire-teams");
+        console.log('Current teams in localStorage:', savedTeams);
         
-        // Save to localStorage with forced write
-        localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
-        console.log('All teams after update:', updatedTeams);
-        
-        // Force multiple event dispatches for better reliability
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('teamDataUpdated', { 
-            detail: { teamId, pointsAdded: cumulativePoints, gamesPlayed: 1, lifelinesUsed: totalLifelinesUsedInGame } 
-          }));
+        if (savedTeams) {
+          const teams: Team[] = JSON.parse(savedTeams);
+          const updatedTeams = teams.map(team => {
+            if (team.id === teamId) {
+              const updatedTeam = {
+                ...team,
+                points: team.points + cumulativePoints,
+                gamesPlayed: team.gamesPlayed + 1,
+                totalLifelinesUsed: (team.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
+              };
+              console.log('Updating team:', team.name, 'Old points:', team.points, 'Points to add:', cumulativePoints, 'New total:', updatedTeam.points);
+              return updatedTeam;
+            }
+            return team;
+          });
           
+          // Force save to localStorage multiple times to ensure persistence
+          localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
+          
+          // Verify the save worked
+          const verifyTeams = localStorage.getItem("millionaire-teams");
+          console.log('Verified teams after save:', verifyTeams);
+          
+          // Dispatch multiple events to force UI updates
+          const customEvent = new CustomEvent('teamDataUpdated', { 
+            detail: { 
+              teamId, 
+              pointsAdded: cumulativePoints, 
+              gamesPlayed: 1, 
+              lifelinesUsed: totalLifelinesUsedInGame,
+              timestamp: Date.now()
+            } 
+          });
+          
+          window.dispatchEvent(customEvent);
+          
+          // Also dispatch storage event
           window.dispatchEvent(new StorageEvent('storage', {
             key: 'millionaire-teams',
             newValue: JSON.stringify(updatedTeams),
-            oldValue: savedTeams
+            oldValue: savedTeams,
+            storageArea: localStorage
           }));
-        }, 100);
+          
+          // Force page refresh after a delay to ensure data is visible
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+          
+        } else {
+          console.error('No teams found in localStorage');
+        }
+      } catch (error) {
+        console.error('Error saving team data:', error);
       }
     }
     
@@ -267,11 +294,6 @@ const GameScreen = ({
     
     console.log('Calling onGameEnd with result:', gameResult);
     onGameEnd(gameResult);
-    
-    // Navigate after ensuring data is saved
-    setTimeout(() => {
-      navigate('/');
-    }, 500);
   };
 
   const handleWalkAway = () => {
@@ -583,7 +605,7 @@ const GameScreen = ({
             
             <div className="flex justify-center space-x-4">
               <Button
-                onClick={() => navigate('/')}
+                onClick={() => window.location.href = '/'}
                 variant="outline"
                 className="border-millionaire-accent"
               >
