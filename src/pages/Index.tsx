@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
-import { QuizConfig } from "./QuizSetup";
+import { QuizConfig } from "@/types/quiz";
 
 const Index = () => {
   const [questions, setQuestions] = useState<Question[]>([]);

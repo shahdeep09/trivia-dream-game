@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Play, Settings, Trash2 } from "lucide-react";
-import { QuizConfig } from "./QuizSetup";
+import { QuizConfig } from "@/types/quiz";
 import { toast } from "@/hooks/use-toast";
 
 const QuizManager = () => {

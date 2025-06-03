@@ -1,5 +1,4 @@
-
-import { QuizConfig } from "@/pages/QuizSetup";
+import { QuizConfig } from "@/types/quiz";
 
 interface MoneyLadderProps {
   currentLevel: number;

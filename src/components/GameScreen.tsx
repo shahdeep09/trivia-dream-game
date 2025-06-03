@@ -10,7 +10,7 @@ import Confetti from "react-confetti";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Lifeline from "./Lifeline";
-import { QuizConfig } from "@/pages/QuizSetup";
+import { QuizConfig } from "@/types/quiz";
 
 interface GameScreenProps {
   questions: QuestionType[];

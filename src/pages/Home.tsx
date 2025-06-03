@@ -8,7 +8,7 @@ import { Trophy, Users, Settings, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { QuizConfig } from "./QuizSetup";
+import { QuizConfig } from "@/types/quiz";
 
 const Home = () => {
   const [teams, setTeams] = useState<Team[]>([]);
