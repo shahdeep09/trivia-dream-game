@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import Question from "./Question";
@@ -216,35 +215,48 @@ const GameScreen = ({
     setResultDialogOpen(false);
     setShowConfetti(false);
 
-    // Fix: Update team score and lifeline usage properly
+    // Enhanced team data saving with proper state management
     if (teamId) {
       const savedTeams = localStorage.getItem("millionaire-teams");
       if (savedTeams) {
         const teams: Team[] = JSON.parse(savedTeams);
         const updatedTeams = teams.map(team => {
           if (team.id === teamId) {
-            return {
+            const updatedTeam = {
               ...team,
               points: team.points + cumulativePoints,
               gamesPlayed: team.gamesPlayed + 1,
               totalLifelinesUsed: (team.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
             };
+            console.log('Updating team data:', updatedTeam);
+            return updatedTeam;
           }
           return team;
         });
         localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
-        console.log('Team data saved:', updatedTeams.find(t => t.id === teamId));
+        console.log('All teams after update:', updatedTeams);
+        
+        // Dispatch custom event to trigger UI refresh
+        window.dispatchEvent(new CustomEvent('teamDataUpdated', { 
+          detail: { teamId, pointsAdded: cumulativePoints } 
+        }));
       }
     }
     
-    onGameEnd({
+    const gameResult: GameResult = {
       totalWon: cumulativePoints,
       questionLevel: currentQuestionIndex + 1,
       isWinner: gameWon,
       teamId
-    });
+    };
     
-    navigate('/');
+    console.log('Calling onGameEnd with result:', gameResult);
+    onGameEnd(gameResult);
+    
+    // Small delay to ensure state is saved before navigation
+    setTimeout(() => {
+      navigate('/');
+    }, 100);
   };
 
   const handleWalkAway = () => {

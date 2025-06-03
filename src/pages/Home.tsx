@@ -14,6 +14,7 @@ import { QuizConfig } from "./QuizSetup";
 const Home = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [currentQuizConfig, setCurrentQuizConfig] = useState<QuizConfig | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   useEffect(() => {
     // Load current quiz configuration
@@ -49,6 +50,18 @@ const Home = () => {
         setTeams(teamsWithLifelines);
       }
     }
+  }, [refreshKey]);
+
+  // Listen for team data updates
+  useEffect(() => {
+    const handleTeamUpdate = () => {
+      console.log('Team data update event received, refreshing...');
+      // Force refresh by updating the key
+      setRefreshKey(prev => prev + 1);
+    };
+
+    window.addEventListener('teamDataUpdated', handleTeamUpdate);
+    return () => window.removeEventListener('teamDataUpdated', handleTeamUpdate);
   }, []);
   
   // Save teams to localStorage whenever they change
