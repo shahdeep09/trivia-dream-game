@@ -73,7 +73,7 @@ const Question = ({
     
     if (revealAnswer && showResult) {
       if (index === question.correctOptionIndex) {
-        baseClass += "bg-green-600 border-2 border-green-400 animate-pulse";
+        baseClass += "bg-green-600 border-2 border-green-400";
       } else if (selectedOption === index && index !== question.correctOptionIndex) {
         baseClass += "bg-red-600 border-2 border-red-400";
       }
