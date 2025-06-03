@@ -217,84 +217,76 @@ const GameScreen = ({
     setActionHistory([...actionHistory, lifelineAction]);
   };
   
+  const updateTeamData = async (teamToUpdate: Team, pointsToAdd: number) => {
+    console.log('Updating team data:', teamToUpdate.name, 'Adding points:', pointsToAdd);
+    
+    try {
+      const updatedTeam = {
+        ...teamToUpdate,
+        points: teamToUpdate.points + pointsToAdd,
+        gamesPlayed: teamToUpdate.gamesPlayed + 1,
+        totalLifelinesUsed: (teamToUpdate.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
+      };
+
+      // Update in Supabase first
+      if (quizConfig?.id) {
+        const { error } = await supabase
+          .from('teams')
+          .update({
+            points: updatedTeam.points,
+            games_played: updatedTeam.gamesPlayed,
+            total_lifelines_used: updatedTeam.totalLifelinesUsed
+          })
+          .eq('id', teamId);
+
+        if (error) {
+          console.error('Error updating team in Supabase:', error);
+        } else {
+          console.log('Team updated in Supabase successfully');
+        }
+      }
+
+      // Update localStorage as backup
+      const savedTeams = localStorage.getItem("millionaire-teams");
+      if (savedTeams) {
+        const teams: Team[] = JSON.parse(savedTeams);
+        const teamIndex = teams.findIndex(team => team.id === teamId);
+        
+        if (teamIndex !== -1) {
+          teams[teamIndex] = updatedTeam;
+          localStorage.setItem("millionaire-teams", JSON.stringify(teams));
+          
+          // Dispatch update event
+          const customEvent = new CustomEvent('teamDataUpdated', { 
+            detail: { 
+              teamId, 
+              pointsAdded: pointsToAdd, 
+              gamesPlayed: 1, 
+              lifelinesUsed: totalLifelinesUsedInGame,
+              timestamp: Date.now()
+            } 
+          });
+          window.dispatchEvent(customEvent);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating team data:', error);
+    }
+  };
+
   const handleGameEnd = () => {
     setResultDialogOpen(false);
     setShowConfetti(false);
 
-    // Update team data with better error handling and forced persistence
+    // Update team data with the new function
     if (teamId) {
-      console.log('Saving game results for team:', teamId, 'Points won:', cumulativePoints);
-      
-      try {
-        const savedTeams = localStorage.getItem("millionaire-teams");
-        console.log('Current teams in localStorage:', savedTeams);
-        
-        if (savedTeams) {
-          const teams: Team[] = JSON.parse(savedTeams);
-          const teamIndex = teams.findIndex(team => team.id === teamId);
-          
-          if (teamIndex !== -1) {
-            // Update the existing team
-            const updatedTeams = [...teams];
-            updatedTeams[teamIndex] = {
-              ...updatedTeams[teamIndex],
-              points: updatedTeams[teamIndex].points + cumulativePoints,
-              gamesPlayed: updatedTeams[teamIndex].gamesPlayed + 1,
-              totalLifelinesUsed: (updatedTeams[teamIndex].totalLifelinesUsed || 0) + totalLifelinesUsedInGame
-            };
-            
-            console.log('Updating team:', updatedTeams[teamIndex].name, 'Old points:', teams[teamIndex].points, 'Points to add:', cumulativePoints, 'New total:', updatedTeams[teamIndex].points);
-            
-            localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
-            
-            // Update team in Supabase
-            if (quizConfig?.id) {
-              supabase
-                .from('teams')
-                .update({
-                  points: updatedTeams[teamIndex].points,
-                  games_played: updatedTeams[teamIndex].gamesPlayed,
-                  total_lifelines_used: updatedTeams[teamIndex].totalLifelinesUsed
-                })
-                .eq('id', teamId)
-                .then(({ error }) => {
-                  if (error) {
-                    console.error('Error updating team in Supabase:', error);
-                  } else {
-                    console.log('Team updated in Supabase successfully');
-                  }
-                });
-            }
-            
-            const verifyTeams = localStorage.getItem("millionaire-teams");
-            console.log('Verified teams after save:', verifyTeams);
-            
-            const customEvent = new CustomEvent('teamDataUpdated', { 
-              detail: { 
-                teamId, 
-                pointsAdded: cumulativePoints, 
-                gamesPlayed: 1, 
-                lifelinesUsed: totalLifelinesUsedInGame,
-                timestamp: Date.now()
-              } 
-            });
-            
-            window.dispatchEvent(customEvent);
-            
-            window.dispatchEvent(new StorageEvent('storage', {
-              key: 'millionaire-teams',
-              newValue: JSON.stringify(updatedTeams),
-              oldValue: savedTeams,
-              storageArea: localStorage
-            }));
-          } else {
-            console.error('Team not found in localStorage teams:', teamId);
-          }
-        } else {
-          console.error('No teams found in localStorage');
+      const savedTeams = localStorage.getItem("millionaire-teams");
+      if (savedTeams) {
+        const teams: Team[] = JSON.parse(savedTeams);
+        const team = teams.find(t => t.id === teamId);
+        if (team) {
+          updateTeamData(team, cumulativePoints);
         }
-      } catch (error) {
-        console.error('Error saving team data:', error);
       }
     }
     
@@ -397,6 +389,92 @@ const GameScreen = ({
     );
   }
 
+  const getLifelineComponents = () => {
+    if (!quizConfig.selectedLifelines) return [];
+    
+    const components = [];
+    
+    // Only show each lifeline once, mapped correctly
+    quizConfig.selectedLifelines.forEach((lifeline) => {
+      switch (lifeline) {
+        case 'fifty-fifty':
+          components.push(
+            <Lifeline
+              key="fifty-fifty"
+              type="fifty-fifty"
+              isUsed={lifelinesUsed["fifty-fifty"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          );
+          break;
+        case 'phone-friend':
+          components.push(
+            <Lifeline
+              key="phone-friend"
+              type="phone-friend"
+              isUsed={lifelinesUsed["phone-friend"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          );
+          break;
+        case 'ask-audience':
+          components.push(
+            <Lifeline
+              key="ask-audience"
+              type="ask-audience"
+              isUsed={lifelinesUsed["ask-audience"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          );
+          break;
+        case 'ask-expert':
+          components.push(
+            <Lifeline
+              key="ask-expert"
+              type="phone-friend"
+              isUsed={lifelinesUsed["phone-friend"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          );
+          break;
+        case 'audience-poll':
+          components.push(
+            <Lifeline
+              key="audience-poll"
+              type="ask-audience"
+              isUsed={lifelinesUsed["ask-audience"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          );
+          break;
+        case 'roll-dice':
+          components.push(
+            <Lifeline
+              key="roll-dice"
+              type="fifty-fifty"
+              isUsed={lifelinesUsed["fifty-fifty"]}
+              onUse={handleUseLifeline}
+              currentQuestion={currentQuestion}
+              settings={settings}
+            />
+          );
+          break;
+      }
+    });
+    
+    return components;
+  };
+
   return (
     <div className="flex flex-col h-screen bg-millionaire-dark text-millionaire-light overflow-hidden">
       {showConfetti && (
@@ -437,62 +515,9 @@ const GameScreen = ({
           </div>
         </div>
 
-        {/* Lifelines in the center - Fixed: properly check selected lifelines */}
+        {/* Fixed Lifelines in the center - no duplicates */}
         <div className="flex justify-center gap-6">
-          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('fifty-fifty') && (
-            <Lifeline
-              type="fifty-fifty"
-              isUsed={lifelinesUsed["fifty-fifty"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          )}
-          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('phone-friend') && (
-            <Lifeline
-              type="phone-friend"
-              isUsed={lifelinesUsed["phone-friend"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          )}
-          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('ask-audience') && (
-            <Lifeline
-              type="ask-audience"
-              isUsed={lifelinesUsed["ask-audience"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          )}
-          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('ask-expert') && (
-            <Lifeline
-              type="phone-friend"
-              isUsed={lifelinesUsed["phone-friend"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          )}
-          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('audience-poll') && (
-            <Lifeline
-              type="ask-audience"
-              isUsed={lifelinesUsed["ask-audience"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          )}
-          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('roll-dice') && (
-            <Lifeline
-              type="fifty-fifty"
-              isUsed={lifelinesUsed["fifty-fifty"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          )}
+          {getLifelineComponents()}
         </div>
         
         <div className="flex gap-2">

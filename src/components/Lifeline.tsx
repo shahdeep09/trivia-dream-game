@@ -33,7 +33,7 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
   const getLifelineIcon = () => {
     const lifelineName = getLifelineName().toLowerCase();
     
-    // Check if it's a roll dice lifeline
+    // Check for Roll the Dice lifeline
     if (lifelineName.includes('dice') || lifelineName.includes('roll')) {
       const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
       const randomDice = diceIcons[Math.floor(Math.random() * diceIcons.length)];
@@ -51,18 +51,15 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
       return "📊";
     }
     
+    // Default icons for standard lifelines
     switch (type) {
       case "fifty-fifty":
-        // Only show 50:50 icon for actual fifty-fifty lifeline
-        if (lifelineName.includes('50') || lifelineName === 'fifty-fifty') {
-          return (
-            <div className="text-sm text-center">
-              <span className="block">50</span>
-              <span className="block">50</span>
-            </div>
-          );
-        }
-        return "🎯";
+        return (
+          <div className="text-sm text-center">
+            <span className="block">50</span>
+            <span className="block">50</span>
+          </div>
+        );
       case "phone-friend":
         return "📞";
       case "ask-audience":
@@ -80,23 +77,23 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
     
     switch (type) {
       case "fifty-fifty":
-        // Only apply fifty-fifty logic for actual 50:50 lifeline
-        if (lifelineName.includes('50') || lifelineName === 'fifty-fifty') {
-          result = applyFiftyFifty(currentQuestion);
-          onUse(type, result);
-        } else if (lifelineName.includes('dice') || lifelineName.includes('roll')) {
-          // For Roll the Dice, just mark as used without any result
+        if (lifelineName.includes('dice') || lifelineName.includes('roll')) {
+          // Roll the Dice - just mark as used, no special effect
           result = null;
+          onUse(type, result);
+        } else {
+          // Standard 50:50 - remove two wrong answers
+          result = applyFiftyFifty(currentQuestion);
           onUse(type, result);
         }
         break;
       case "phone-friend":
-        // For ask the expert, just mark as used - no dialog
         if (lifelineName.includes('expert')) {
+          // Ask the Expert - just mark as used, no dialog
           result = null;
           onUse(type, result);
         } else {
-          // For actual phone a friend, show dialog
+          // Standard Phone a Friend - show dialog
           result = phoneAFriend(currentQuestion);
           setFriendResponse(result);
           setDialogOpen(true);
@@ -104,12 +101,12 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
         }
         break;
       case "ask-audience":
-        // For audience poll, just mark as used - no dialog
         if (lifelineName.includes('poll')) {
+          // Audience Poll - just mark as used, no dialog
           result = null;
           onUse(type, result);
         } else {
-          // For actual ask the audience, show dialog
+          // Standard Ask the Audience - show dialog
           result = askTheAudience(currentQuestion);
           setAudienceResults(result);
           setDialogOpen(true);
@@ -124,9 +121,8 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
     
     switch (type) {
       case "phone-friend":
-        // Only show dialog for actual phone a friend, not ask the expert
         if (lifelineName.includes('expert')) {
-          return null;
+          return null; // No dialog for Ask the Expert
         }
         return (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -143,9 +139,8 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
           </Dialog>
         );
       case "ask-audience":
-        // Only show dialog for actual ask the audience, not audience poll
         if (lifelineName.includes('poll')) {
-          return null;
+          return null; // No dialog for Audience Poll
         }
         return (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

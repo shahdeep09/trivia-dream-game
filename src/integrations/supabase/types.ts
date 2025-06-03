@@ -50,6 +50,86 @@ export type Database = {
         }
         Relationships: []
       }
+      quizzes: {
+        Row: {
+          created_at: string
+          id: string
+          logo: string | null
+          number_of_questions: number
+          number_of_teams: number
+          question_config: Json
+          samaj_name: string
+          selected_lifelines: string[]
+          team_names: string[]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo?: string | null
+          number_of_questions: number
+          number_of_teams: number
+          question_config: Json
+          samaj_name: string
+          selected_lifelines: string[]
+          team_names: string[]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo?: string | null
+          number_of_questions?: number
+          number_of_teams?: number
+          question_config?: Json
+          samaj_name?: string
+          selected_lifelines?: string[]
+          team_names?: string[]
+        }
+        Relationships: []
+      }
+      teams: {
+        Row: {
+          bonus_points: number | null
+          created_at: string
+          games_played: number | null
+          id: string
+          name: string
+          points: number | null
+          quiz_id: string | null
+          total_lifelines_used: number | null
+          updated_at: string
+        }
+        Insert: {
+          bonus_points?: number | null
+          created_at?: string
+          games_played?: number | null
+          id?: string
+          name: string
+          points?: number | null
+          quiz_id?: string | null
+          total_lifelines_used?: number | null
+          updated_at?: string
+        }
+        Update: {
+          bonus_points?: number | null
+          created_at?: string
+          games_played?: number | null
+          id?: string
+          name?: string
+          points?: number | null
+          quiz_id?: string | null
+          total_lifelines_used?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           created_at: string | null
