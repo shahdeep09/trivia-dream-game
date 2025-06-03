@@ -423,7 +423,7 @@ const GameScreen = ({
 
         {/* Lifelines in the center - only show selected ones */}
         <div className="flex justify-center gap-6">
-          {quizConfig.selectedLifelines?.lifeline1 && (
+          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('lifeline1') && (
             <Lifeline
               type="fifty-fifty"
               isUsed={lifelinesUsed["fifty-fifty"]}
@@ -432,7 +432,7 @@ const GameScreen = ({
               settings={settings}
             />
           )}
-          {quizConfig.selectedLifelines?.lifeline2 && (
+          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('lifeline2') && (
             <Lifeline
               type="phone-friend"
               isUsed={lifelinesUsed["phone-friend"]}
@@ -441,7 +441,7 @@ const GameScreen = ({
               settings={settings}
             />
           )}
-          {quizConfig.selectedLifelines?.lifeline3 && (
+          {quizConfig.selectedLifelines && quizConfig.selectedLifelines.includes('lifeline3') && (
             <Lifeline
               type="ask-audience"
               isUsed={lifelinesUsed["ask-audience"]}
