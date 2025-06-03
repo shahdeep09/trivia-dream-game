@@ -238,6 +238,7 @@ const GameScreen = ({
 
       // Update in Supabase first - only for current quiz
       if (quizConfig?.id && teamId) {
+        console.log('Updating team in Supabase:', teamId, 'Quiz:', quizConfig.id);
         const { error } = await supabase
           .from('teams')
           .update({
@@ -246,12 +247,21 @@ const GameScreen = ({
             total_lifelines_used: updatedTeam.totalLifelinesUsed
           })
           .eq('id', teamId)
-          .eq('quiz_id', quizConfig.id); // Ensure we only update teams for this quiz
+          .eq('quiz_id', quizConfig.id);
 
         if (error) {
           console.error('Error updating team in Supabase:', error);
+          toast({
+            title: "Error",
+            description: "Failed to save points to database",
+            variant: "destructive"
+          });
         } else {
           console.log('Team updated in Supabase successfully');
+          toast({
+            title: "Points Saved",
+            description: `${pointsToAdd} points added to ${teamToUpdate.name}`,
+          });
         }
       }
 
@@ -264,8 +274,9 @@ const GameScreen = ({
         if (teamIndex !== -1) {
           teams[teamIndex] = updatedTeam;
           localStorage.setItem("millionaire-teams", JSON.stringify(teams));
+          localStorage.setItem(`teams-${quizConfig.id}`, JSON.stringify(teams));
           
-          // Dispatch update event
+          // Dispatch update event with quiz isolation
           const customEvent = new CustomEvent('teamDataUpdated', { 
             detail: { 
               teamId, 
@@ -281,6 +292,11 @@ const GameScreen = ({
       }
     } catch (error) {
       console.error('Error updating team data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save game results",
+        variant: "destructive"
+      });
     }
   };
 

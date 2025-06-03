@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Play, Settings, Trash2 } from "lucide-react";
 import { QuizConfig } from "@/types/quiz";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const QuizManager = () => {
   const navigate = useNavigate();
@@ -23,15 +24,48 @@ const QuizManager = () => {
     navigate("/");
   };
 
-  const deleteQuiz = (quizId: string) => {
-    const updatedHistory = quizHistory.filter(quiz => quiz.id !== quizId);
-    setQuizHistory(updatedHistory);
-    localStorage.setItem("quiz-history", JSON.stringify(updatedHistory));
-    
-    toast({
-      title: "Quiz Deleted",
-      description: "The quiz has been removed from history",
-    });
+  const deleteQuiz = async (quizId: string) => {
+    try {
+      // Delete teams associated with this quiz from Supabase
+      const { error: teamsError } = await supabase
+        .from('teams')
+        .delete()
+        .eq('quiz_id', quizId);
+
+      if (teamsError) {
+        console.error('Error deleting teams from Supabase:', teamsError);
+      }
+
+      // Delete quiz from localStorage
+      const updatedHistory = quizHistory.filter(quiz => quiz.id !== quizId);
+      setQuizHistory(updatedHistory);
+      localStorage.setItem("quiz-history", JSON.stringify(updatedHistory));
+      
+      // Clean up quiz-specific team data from localStorage
+      localStorage.removeItem(`teams-${quizId}`);
+      
+      // If this was the current quiz, clear it
+      const currentQuiz = localStorage.getItem("current-quiz-config");
+      if (currentQuiz) {
+        const parsed = JSON.parse(currentQuiz);
+        if (parsed.id === quizId) {
+          localStorage.removeItem("current-quiz-config");
+          localStorage.removeItem("millionaire-teams");
+        }
+      }
+      
+      toast({
+        title: "Quiz Deleted",
+        description: "The quiz and all associated team data have been removed",
+      });
+    } catch (error) {
+      console.error('Error deleting quiz:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete quiz completely",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -109,6 +143,9 @@ const QuizManager = () => {
                     </p>
                     <p className="text-sm">
                       <span className="font-medium">Lifelines:</span> {quiz.selectedLifelines.length}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Quiz ID:</span> {quiz.id.slice(0, 8)}
                     </p>
                     <p className="text-sm">
                       <span className="font-medium">Created:</span>{" "}

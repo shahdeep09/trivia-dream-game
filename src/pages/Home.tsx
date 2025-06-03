@@ -42,7 +42,7 @@ const Home = () => {
       const { data: teamsData, error } = await supabase
         .from('teams')
         .select('*')
-        .eq('quiz_id', config.id) // Only load teams for current quiz
+        .eq('quiz_id', config.id)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -215,25 +215,34 @@ const Home = () => {
           total_lifelines_used: team.totalLifelinesUsed
         })
         .eq('id', teamId)
-        .eq('quiz_id', currentQuizConfig.id); // Ensure we only update teams for this quiz
+        .eq('quiz_id', currentQuizConfig.id);
 
       if (error) {
         console.error('Error updating team in Supabase:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save bonus points to database",
+          variant: "destructive"
+        });
       } else {
         console.log('Team updated in Supabase successfully for quiz:', currentQuizConfig.id);
+        toast({
+          title: "Bonus Points Saved",
+          description: "The bonus points have been updated for this team.",
+        });
       }
     } catch (error) {
       console.error('Error saving team data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save bonus points",
+        variant: "destructive"
+      });
     }
     
     // Save the updated teams to localStorage with quiz isolation
     localStorage.setItem(`teams-${currentQuizConfig.id}`, JSON.stringify(teams));
     localStorage.setItem("millionaire-teams", JSON.stringify(teams));
-    
-    toast({
-      title: "Bonus Points Saved",
-      description: "The bonus points have been updated for this team.",
-    });
     
     // Force refresh to ensure data consistency
     setTimeout(() => {
