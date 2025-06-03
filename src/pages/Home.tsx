@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { QuizConfig } from "@/types/quiz";
+import { supabase } from "@/integrations/supabase/client";
 
 const Home = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -21,55 +22,98 @@ const Home = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  // Load teams data
-  const loadTeamsData = () => {
-    console.log('Loading teams data from localStorage...');
+  // Load teams data from Supabase for current quiz
+  const loadTeamsData = async () => {
+    console.log('Loading teams data from Supabase...');
     
     // Load current quiz configuration
     const savedConfig = localStorage.getItem("current-quiz-config");
-    if (savedConfig) {
-      const config: QuizConfig = JSON.parse(savedConfig);
-      setCurrentQuizConfig(config);
+    if (!savedConfig) {
+      setCurrentQuizConfig(null);
+      setTeams([]);
+      return;
     }
 
-    // Load teams from localStorage
-    const savedTeams = localStorage.getItem("millionaire-teams");
-    console.log('Raw teams data from localStorage:', savedTeams);
-    
-    if (savedTeams) {
-      try {
-        const loadedTeams: Team[] = JSON.parse(savedTeams);
-        console.log('Parsed teams data:', loadedTeams);
-        
-        // Ensure all required fields are present
-        const teamsWithAllFields = loadedTeams.map(team => ({
-          ...team,
+    const config: QuizConfig = JSON.parse(savedConfig);
+    setCurrentQuizConfig(config);
+
+    try {
+      // Load teams from Supabase for this specific quiz
+      const { data: teamsData, error } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('quiz_id', config.id)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading teams from Supabase:', error);
+        // Fallback to creating teams from config
+        createTeamsFromConfig(config);
+      } else if (teamsData && teamsData.length > 0) {
+        // Convert Supabase data to Team format
+        const formattedTeams: Team[] = teamsData.map(team => ({
+          id: team.id,
+          name: team.name,
           points: team.points || 0,
-          gamesPlayed: team.gamesPlayed || 0,
-          bonusPoints: team.bonusPoints || 0,
-          totalLifelinesUsed: team.totalLifelinesUsed || 0
+          gamesPlayed: team.games_played || 0,
+          bonusPoints: team.bonus_points || 0,
+          totalLifelinesUsed: team.total_lifelines_used || 0
         }));
         
-        console.log('Teams with all fields:', teamsWithAllFields);
-        setTeams(teamsWithAllFields);
-      } catch (error) {
-        console.error('Error parsing teams data:', error);
-        setTeams([]);
+        console.log('Loaded teams from Supabase:', formattedTeams);
+        setTeams(formattedTeams);
+        
+        // Also save to localStorage as backup
+        localStorage.setItem("millionaire-teams", JSON.stringify(formattedTeams));
+      } else {
+        // No teams found, create them
+        createTeamsFromConfig(config);
       }
-    } else if (currentQuizConfig) {
-      // Generate teams based on quiz configuration if no saved teams
-      const configuredTeams: Team[] = currentQuizConfig.teamNames.map((name, index) => ({
-        id: (index + 1).toString(),
-        name: name,
-        points: 0,
-        gamesPlayed: 0,
-        bonusPoints: 0,
-        totalLifelinesUsed: 0
-      }));
-      
-      setTeams(configuredTeams);
-      localStorage.setItem("millionaire-teams", JSON.stringify(configuredTeams));
+    } catch (error) {
+      console.error('Error loading teams:', error);
+      createTeamsFromConfig(config);
     }
+  };
+
+  const createTeamsFromConfig = async (config: QuizConfig) => {
+    console.log('Creating teams from config...');
+    
+    const configuredTeams: Team[] = config.teamNames.map((name, index) => ({
+      id: crypto.randomUUID(),
+      name: name,
+      points: 0,
+      gamesPlayed: 0,
+      bonusPoints: 0,
+      totalLifelinesUsed: 0
+    }));
+    
+    try {
+      // Save teams to Supabase
+      const teamsData = configuredTeams.map(team => ({
+        id: team.id,
+        quiz_id: config.id,
+        name: team.name,
+        points: team.points,
+        games_played: team.gamesPlayed,
+        bonus_points: team.bonusPoints,
+        total_lifelines_used: team.totalLifelinesUsed
+      }));
+
+      const { error } = await supabase
+        .from('teams')
+        .insert(teamsData);
+
+      if (error) {
+        console.error('Error saving teams to Supabase:', error);
+      } else {
+        console.log('Teams saved to Supabase successfully');
+      }
+    } catch (error) {
+      console.error('Error creating teams in Supabase:', error);
+    }
+    
+    setTeams(configuredTeams);
+    localStorage.setItem("millionaire-teams", JSON.stringify(configuredTeams));
   };
 
   // Initial load
@@ -148,7 +192,31 @@ const Home = () => {
   };
 
   // Save bonus points for a team
-  const saveBonusPoints = (teamId: string) => {
+  const saveBonusPoints = async (teamId: string) => {
+    const team = teams.find(t => t.id === teamId);
+    if (!team || !currentQuizConfig) return;
+
+    try {
+      // Update in Supabase
+      const { error } = await supabase
+        .from('teams')
+        .update({ 
+          bonus_points: team.bonusPoints,
+          points: team.points,
+          games_played: team.gamesPlayed,
+          total_lifelines_used: team.totalLifelinesUsed
+        })
+        .eq('id', teamId);
+
+      if (error) {
+        console.error('Error updating team in Supabase:', error);
+      } else {
+        console.log('Team updated in Supabase successfully');
+      }
+    } catch (error) {
+      console.error('Error saving team data:', error);
+    }
+    
     // Save the updated teams to localStorage
     localStorage.setItem("millionaire-teams", JSON.stringify(teams));
     

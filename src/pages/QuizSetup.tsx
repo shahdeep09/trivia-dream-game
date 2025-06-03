@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const QuizSetup = () => {
   const navigate = useNavigate();
-  const [logo, setLogo] = useState<string>("/lovable-uploads/0d1e7ef2-aeab-4808-882b-a623fe6dc254.png");
+  const [logo, setLogo] = useState<string>("/lovable-uploads/1a649c49-3877-4d02-8989-3f8a7fb3c46b.png");
   const [numberOfQuestions, setNumberOfQuestions] = useState<number>(15);
   const [showQuestionConfig, setShowQuestionConfig] = useState(false);
   const [questionConfig, setQuestionConfig] = useState<Array<{
@@ -214,13 +214,19 @@ const QuizSetup = () => {
         console.error('Error saving teams to Supabase:', teamsError);
       }
 
+      // Clear any previous quiz data from localStorage
+      localStorage.removeItem("millionaire-teams");
+      localStorage.removeItem("current-quiz-config");
+      
+      // Set new quiz config
+      localStorage.setItem("current-quiz-config", JSON.stringify(quizConfig));
+
       // Update local history
-      const updatedHistory = [...quizHistory, quizConfig];
+      const updatedHistory = [quizConfig, ...quizHistory];
       setQuizHistory(updatedHistory);
       
       // Keep localStorage as backup
       localStorage.setItem("quiz-history", JSON.stringify(updatedHistory));
-      localStorage.setItem("current-quiz-config", JSON.stringify(quizConfig));
 
       toast({
         title: "Quiz Created Successfully",
@@ -231,10 +237,13 @@ const QuizSetup = () => {
     } catch (error) {
       console.error('Error saving quiz:', error);
       // Fallback to localStorage only
-      const updatedHistory = [...quizHistory, quizConfig];
+      localStorage.removeItem("millionaire-teams");
+      localStorage.removeItem("current-quiz-config");
+      
+      localStorage.setItem("current-quiz-config", JSON.stringify(quizConfig));
+      const updatedHistory = [quizConfig, ...quizHistory];
       setQuizHistory(updatedHistory);
       localStorage.setItem("quiz-history", JSON.stringify(updatedHistory));
-      localStorage.setItem("current-quiz-config", JSON.stringify(quizConfig));
 
       toast({
         title: "Quiz Created",
@@ -247,6 +256,10 @@ const QuizSetup = () => {
   };
 
   const loadExistingQuiz = async (config: QuizConfig) => {
+    // Clear previous quiz data
+    localStorage.removeItem("millionaire-teams");
+    localStorage.removeItem("current-quiz-config");
+    
     localStorage.setItem("current-quiz-config", JSON.stringify(config));
     
     // Load teams from Supabase for this quiz
