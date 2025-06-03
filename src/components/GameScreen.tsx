@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import Question from "./Question";
@@ -5,9 +6,9 @@ import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Undo, CheckCircle } from "lucide-react"; // Import Undo icon
-import Confetti from "react-confetti"; // We'll need to install this package
-import { useWindowSize } from "@/hooks/use-window-size"; // Custom hook for window size
+import { Undo, CheckCircle } from "lucide-react";
+import Confetti from "react-confetti";
+import { useWindowSize } from "@/hooks/use-window-size";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Lifeline from "./Lifeline";
 import { QuizConfig } from "@/pages/QuizSetup";
@@ -39,7 +40,7 @@ const GameScreen = ({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [gameQuestions, setGameQuestions] = useState<QuestionType[]>([]);
   const [moneyWon, setMoneyWon] = useState(0);
-  const [cumulativePoints, setCumulativePoints] = useState(0); // New state for cumulative points
+  const [cumulativePoints, setCumulativePoints] = useState(0);
   const [revealAnswer, setRevealAnswer] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -62,18 +63,16 @@ const GameScreen = ({
     "ask-audience": false,
   });
   const [disabledOptions, setDisabledOptions] = useState<number[]>([]);
-  const [totalLifelinesUsedInGame, setTotalLifelinesUsedInGame] = useState(0); // New state for tracking lifelines used in current game
+  const [totalLifelinesUsedInGame, setTotalLifelinesUsedInGame] = useState(0);
   
   // Action history for undo functionality
   const [actionHistory, setActionHistory] = useState<GameAction[]>([]);
 
-  // Prepare questions when game starts - now using quiz config
+  // Prepare questions when game starts
   useEffect(() => {
     if (questions.length > 0 && quizConfig) {
-      // Sort questions by value/difficulty
       const sortedQuestions = [...questions].sort((a, b) => a.value - b.value);
       
-      // Update questions with configured point values and time limits
       const preparedQuestions = sortedQuestions.slice(0, quizConfig.numberOfQuestions).map((q, index) => {
         const config = quizConfig.questionConfig[index] || { points: 100, timeLimit: 30 };
         return {
@@ -87,6 +86,19 @@ const GameScreen = ({
     }
   }, [questions, settings, quizConfig]);
 
+  // Add spacebar shortcut for final answer
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.code === 'Space' && selectedOption !== null && !revealAnswer) {
+        event.preventDefault();
+        handleFinalAnswer();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [selectedOption, revealAnswer]);
+
   const currentQuestion = gameQuestions[currentQuestionIndex];
   
   const handleAnswer = (selectedIndex: number) => {
@@ -95,7 +107,6 @@ const GameScreen = ({
     setShowResult(true);
     setTimerPaused(true);
     
-    // Add answer action to history
     const answerAction: GameAction = {
       type: 'ANSWER',
       data: { selectedIndex, questionIndex: currentQuestionIndex }
@@ -105,31 +116,26 @@ const GameScreen = ({
     const isCorrect = selectedIndex === currentQuestion.correctOptionIndex;
     
     if (isCorrect) {
-      // Play the appropriate sound based on question level
       if (currentQuestionIndex < 5) {
         playSound("fast-forward", settings, currentQuestionIndex);
       } else {
         playSound("correct", settings);
       }
       
-      // Update cumulative points and money won
       const newCumulativePoints = cumulativePoints + currentQuestion.value;
       setCumulativePoints(newCumulativePoints);
       setMoneyWon(newCumulativePoints);
       
-      // Wait a moment and then show dialog
       setTimeout(() => {
         if (currentQuestionIndex === gameQuestions.length - 1) {
-          // User won the game!
           setGameWon(true);
           setGameOver(true);
           playSound("win", settings);
-          setShowConfetti(true); // Show confetti for winning on the last question
+          setShowConfetti(true);
           setDialogMessage(`Congratulations! You've won ${formatMoney(newCumulativePoints)}!`);
         } else {
           setDialogMessage(`Correct! You now have ${formatMoney(newCumulativePoints)}`);
           
-          // Check if we should show explanation
           if (currentQuestion.explanation) {
             setShowExplanation(true);
           }
@@ -137,10 +143,8 @@ const GameScreen = ({
         setDialogOpen(true);
       }, 2000);
     } else {
-      // Play wrong answer sound
       playSound("wrong", settings);
       
-      // Game over - keep cumulative points earned so far
       setTimeout(() => {
         setGameOver(true);
         setDialogMessage(
@@ -149,7 +153,6 @@ const GameScreen = ({
         );
         setMoneyWon(cumulativePoints);
         
-        // Check if we should show explanation
         if (currentQuestion.explanation) {
           setShowExplanation(true);
         }
@@ -186,7 +189,6 @@ const GameScreen = ({
     );
     setDialogOpen(true);
     
-    // Add timeout action to history
     const timeoutAction: GameAction = {
       type: 'ANSWER',
       data: { timeout: true, questionIndex: currentQuestionIndex }
@@ -196,14 +198,13 @@ const GameScreen = ({
 
   const handleUseLifeline = (type: "fifty-fifty" | "phone-friend" | "ask-audience", result: any) => {
     setLifelinesUsed({ ...lifelinesUsed, [type]: true });
-    setTotalLifelinesUsedInGame(totalLifelinesUsedInGame + 1); // Increment lifeline usage count
+    setTotalLifelinesUsedInGame(totalLifelinesUsedInGame + 1);
     playSound("lifeline", settings);
     
     if (type === "fifty-fifty") {
       setDisabledOptions(result);
     }
     
-    // Add lifeline action to history
     const lifelineAction: GameAction = {
       type: 'LIFELINE',
       data: { type, result }
@@ -215,7 +216,7 @@ const GameScreen = ({
     setResultDialogOpen(false);
     setShowConfetti(false);
 
-    // Update team score and lifeline usage if a team is playing
+    // Fix: Update team score and lifeline usage properly
     if (teamId) {
       const savedTeams = localStorage.getItem("millionaire-teams");
       if (savedTeams) {
@@ -224,7 +225,7 @@ const GameScreen = ({
           if (team.id === teamId) {
             return {
               ...team,
-              points: team.points + cumulativePoints, // Use cumulative points
+              points: team.points + cumulativePoints,
               gamesPlayed: team.gamesPlayed + 1,
               totalLifelinesUsed: (team.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
             };
@@ -232,17 +233,17 @@ const GameScreen = ({
           return team;
         });
         localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
+        console.log('Team data saved:', updatedTeams.find(t => t.id === teamId));
       }
     }
     
     onGameEnd({
-      totalWon: cumulativePoints, // Use cumulative points
+      totalWon: cumulativePoints,
       questionLevel: currentQuestionIndex + 1,
       isWinner: gameWon,
       teamId
     });
     
-    // Navigate back to home page
     navigate('/');
   };
 
@@ -254,7 +255,6 @@ const GameScreen = ({
     );
     setDialogOpen(true);
     
-    // Add walk away action to history
     const walkAwayAction: GameAction = {
       type: 'WALK_AWAY',
       data: { moneyWon: cumulativePoints, questionIndex: currentQuestionIndex }
@@ -262,22 +262,18 @@ const GameScreen = ({
     setActionHistory([...actionHistory, walkAwayAction]);
   };
 
-  // Fix: Create a proper handler for option selection that doesn't expect parameters
   const handleOptionSelect = (optionIndex: number) => {
     setSelectedOption(optionIndex);
     setTimerPaused(true);
   };
 
-  // Toggle timer pause state
   const toggleTimerPause = () => {
     setTimerPaused(!timerPaused);
-    // If we're un-pausing and we're in the first 5 questions, resume fast-forward sound
     if (!timerPaused && currentQuestionIndex < 5) {
       playSound("fast-forward", settings, currentQuestionIndex);
     }
   };
 
-  // Undo last action
   const handleUndo = () => {
     if (actionHistory.length === 0) return;
     
@@ -287,7 +283,6 @@ const GameScreen = ({
     if (lastAction) {
       switch (lastAction.type) {
         case 'LIFELINE':
-          // Undo lifeline usage
           const { type } = lastAction.data;
           setLifelinesUsed({ ...lifelinesUsed, [type]: false });
           setTotalLifelinesUsedInGame(Math.max(0, totalLifelinesUsedInGame - 1));
@@ -297,12 +292,9 @@ const GameScreen = ({
           break;
           
         case 'ANSWER':
-          // Can't really undo an answer, but we can reset the game state
-          // This would be more complex to implement fully
           break;
           
         case 'WALK_AWAY':
-          // Reset game state
           setGameOver(false);
           setDialogOpen(false);
           break;
@@ -310,14 +302,12 @@ const GameScreen = ({
     }
   };
 
-  // Handle final answer confirmation
   const handleFinalAnswer = () => {
     if (selectedOption !== null && !revealAnswer) {
       handleAnswer(selectedOption);
     }
   };
 
-  // Get the current team name if a team is playing
   const getCurrentTeamName = (): string => {
     if (!teamId) return "";
     
@@ -344,7 +334,6 @@ const GameScreen = ({
 
   return (
     <div className="flex flex-col h-screen bg-millionaire-dark text-millionaire-light overflow-hidden">
-      {/* Confetti overlay - only shown when winning the last question */}
       {showConfetti && (
         <Confetti
           width={windowSize.width || 0}
@@ -354,7 +343,21 @@ const GameScreen = ({
         />
       )}
       
-      {/* Control bar - Red box area with Samaj name and controls */}
+      {/* Header with Samaj name and logo */}
+      <div className="bg-millionaire-primary border-b border-millionaire-accent p-4">
+        <div className="flex items-center justify-center">
+          {quizConfig.logo && (
+            <img 
+              src={quizConfig.logo} 
+              alt="Quiz Logo" 
+              className="w-12 h-12 object-cover rounded mr-4"
+            />
+          )}
+          <h1 className="text-3xl font-bold text-millionaire-gold">{quizConfig.samajName}</h1>
+        </div>
+      </div>
+      
+      {/* Control bar */}
       <div className="flex justify-between items-center p-4 bg-millionaire-primary border-b border-millionaire-accent">
         <div className="flex items-center gap-4">
           {teamName && (
@@ -369,12 +372,7 @@ const GameScreen = ({
           </div>
         </div>
 
-        {/* Samaj Name in the center (red box area) */}
-        <div className="flex items-center justify-center">
-          <h1 className="text-3xl font-bold text-millionaire-gold">{quizConfig.samajName}</h1>
-        </div>
-
-        {/* Lifelines in the center-right area */}
+        {/* Lifelines in the center */}
         <div className="flex justify-center gap-6">
           <Lifeline
             type="fifty-fifty"
@@ -416,7 +414,7 @@ const GameScreen = ({
             disabled={selectedOption === null || revealAnswer}
           >
             <CheckCircle size={16} />
-            Final Answer
+            Final Answer (Space)
           </Button>
           <Button
             variant="outline"
@@ -436,30 +434,19 @@ const GameScreen = ({
         </div>
       </div>
       
-      {/* Main content area - Full height and scrollable */}
+      {/* Main content area */}
       <div className="flex flex-col md:flex-row h-full overflow-hidden">
-        {/* Money ladder - Collapsible on mobile */}
+        {/* Money ladder */}
         <div className="md:w-1/4 bg-millionaire-primary border-r border-millionaire-accent overflow-hidden">
-          <ScrollArea className="h-[calc(100vh-64px)]">
+          <ScrollArea className="h-[calc(100vh-128px)]">
             <div className="p-4">
               <MoneyLadder currentLevel={currentQuestionIndex} quizConfig={quizConfig} />
             </div>
           </ScrollArea>
         </div>
         
-        {/* Question area - Full width with logo displayed */}
+        {/* Question area */}
         <div className="md:w-3/4 flex-grow flex flex-col items-center justify-center p-4">
-          {/* Logo display */}
-          {quizConfig.logo && (
-            <div className="mb-6">
-              <img 
-                src={quizConfig.logo} 
-                alt="Quiz Logo" 
-                className="w-32 h-32 object-cover rounded-full mx-auto"
-              />
-            </div>
-          )}
-          
           <Question
             question={currentQuestion}
             onAnswer={handleAnswer}
@@ -489,7 +476,6 @@ const GameScreen = ({
             </DialogDescription>
           </DialogHeader>
           
-          {/* Show explanation if available */}
           {showExplanation && currentQuestion.explanation && (
             <div className="mt-4 p-4 bg-millionaire-secondary rounded-md">
               <h3 className="font-bold text-millionaire-gold mb-2">Explanation:</h3>

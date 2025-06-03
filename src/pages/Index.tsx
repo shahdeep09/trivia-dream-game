@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import GameScreen, { GameResult } from "@/components/GameScreen";
@@ -97,19 +96,28 @@ const Index = () => {
       return;
     }
     
-    // Limit questions to the configured number
     const limitedQuestions = questions.slice(0, currentQuizConfig.numberOfQuestions);
     if (limitedQuestions.length < currentQuizConfig.numberOfQuestions) {
       alert(`You need at least ${currentQuizConfig.numberOfQuestions} questions to start the game. You currently have ${questions.length}.`);
       return;
     }
     
+    // Clear any previous game results to start fresh
+    setGameResult(null);
     setIsPlaying(true);
   };
   
   const handleGameEnd = (result: GameResult) => {
+    console.log('Game ended with result:', result);
     setGameResult(result);
     setIsPlaying(false);
+    
+    // Force re-render of team data by triggering a state update
+    if (result.teamId) {
+      // Trigger a re-render by updating a dummy state or forcing component refresh
+      const event = new CustomEvent('teamDataUpdated');
+      window.dispatchEvent(event);
+    }
   };
   
   const handleBackToAdmin = () => {
