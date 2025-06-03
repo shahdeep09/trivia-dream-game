@@ -27,7 +27,7 @@ export interface QuizConfig {
 
 const QuizSetup = () => {
   const navigate = useNavigate();
-  const [logo, setLogo] = useState<string>("/lovable-uploads/3fbaaab1-2736-4784-ab61-7ef3f1ab4cde.png");
+  const [logo, setLogo] = useState<string>("/lovable-uploads/1870077b-2364-4e1a-b08a-514aaf65d4b5.png");
   const [numberOfQuestions, setNumberOfQuestions] = useState<number>(15);
   const [showQuestionConfig, setShowQuestionConfig] = useState(false);
   const [questionConfig, setQuestionConfig] = useState<Array<{
