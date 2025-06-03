@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Lifeline from "./Lifeline";
 import { QuizConfig } from "@/types/quiz";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface GameScreenProps {
   questions: QuestionType[];
@@ -266,15 +267,17 @@ const GameScreen = ({
       }
 
       // Update localStorage as backup - filter by current quiz
-      const savedTeams = localStorage.getItem("millionaire-teams");
+      const savedTeams = localStorage.getItem(`teams-${quizConfig.id}`);
       if (savedTeams) {
         const teams: Team[] = JSON.parse(savedTeams);
         const teamIndex = teams.findIndex(team => team.id === teamId);
         
         if (teamIndex !== -1) {
           teams[teamIndex] = updatedTeam;
-          localStorage.setItem("millionaire-teams", JSON.stringify(teams));
           localStorage.setItem(`teams-${quizConfig.id}`, JSON.stringify(teams));
+          
+          // Also update the main millionaire-teams for backward compatibility
+          localStorage.setItem("millionaire-teams", JSON.stringify(teams));
           
           // Dispatch update event with quiz isolation
           const customEvent = new CustomEvent('teamDataUpdated', { 
