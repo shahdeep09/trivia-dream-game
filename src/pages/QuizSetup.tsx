@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -110,7 +111,7 @@ const QuizSetup = () => {
 
   const handleNumberOfQuestionsChange = (value: string) => {
     const num = parseInt(value) || 0;
-    if (num > 0 && num <= 50) {
+    if (num > 0 && num <= 20) {
       setNumberOfQuestions(num);
       setShowQuestionConfig(true);
     }
@@ -136,7 +137,7 @@ const QuizSetup = () => {
 
   const handleNumberOfTeamsChange = (value: string) => {
     const num = parseInt(value) || 0;
-    if (num > 0 && num <= 20) {
+    if (num > 0 && num <= 30) {
       setNumberOfTeams(num);
       setShowTeamNames(true);
     }

@@ -63,7 +63,7 @@ export const QuizConfigForm = ({
           <Input
             type="number"
             min="1"
-            max="50"
+            max="20"
             value={numberOfQuestions}
             onChange={(e) => onNumberOfQuestionsChange(e.target.value)}
             className="bg-millionaire-primary border-millionaire-accent"
@@ -94,7 +94,7 @@ export const QuizConfigForm = ({
           <Input
             type="number"
             min="1"
-            max="20"
+            max="30"
             value={numberOfTeams}
             onChange={(e) => onNumberOfTeamsChange(e.target.value)}
             className="bg-millionaire-primary border-millionaire-accent"
