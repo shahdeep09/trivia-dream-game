@@ -354,21 +354,7 @@ const GameScreen = ({
         />
       )}
       
-      {/* Header with Samaj name and logo */}
-      <div className="bg-millionaire-primary border-b border-millionaire-accent p-4">
-        <div className="flex items-center justify-center">
-          {quizConfig.logo && (
-            <img 
-              src={quizConfig.logo} 
-              alt="Quiz Logo" 
-              className="w-12 h-12 object-cover rounded mr-4"
-            />
-          )}
-          <h1 className="text-3xl font-bold text-millionaire-gold">{quizConfig.samajName}</h1>
-        </div>
-      </div>
-      
-      {/* Control bar */}
+      {/* Control bar - Red box area with Samaj name and controls */}
       <div className="flex justify-between items-center p-4 bg-millionaire-primary border-b border-millionaire-accent">
         <div className="flex items-center gap-4">
           {teamName && (
@@ -383,7 +369,12 @@ const GameScreen = ({
           </div>
         </div>
 
-        {/* Lifelines in the center (red box area) */}
+        {/* Samaj Name in the center (red box area) */}
+        <div className="flex items-center justify-center">
+          <h1 className="text-3xl font-bold text-millionaire-gold">{quizConfig.samajName}</h1>
+        </div>
+
+        {/* Lifelines in the center-right area */}
         <div className="flex justify-center gap-6">
           <Lifeline
             type="fifty-fifty"
@@ -456,8 +447,19 @@ const GameScreen = ({
           </ScrollArea>
         </div>
         
-        {/* Question area - Full width */}
+        {/* Question area - Full width with logo displayed */}
         <div className="md:w-3/4 flex-grow flex flex-col items-center justify-center p-4">
+          {/* Logo display */}
+          {quizConfig.logo && (
+            <div className="mb-6">
+              <img 
+                src={quizConfig.logo} 
+                alt="Quiz Logo" 
+                className="w-32 h-32 object-cover rounded-full mx-auto"
+              />
+            </div>
+          )}
+          
           <Question
             question={currentQuestion}
             onAnswer={handleAnswer}
