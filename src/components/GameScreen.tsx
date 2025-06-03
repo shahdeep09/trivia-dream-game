@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import Question from "./Question";
@@ -531,8 +532,8 @@ const GameScreen = ({
       
       {/* Main content area */}
       <div className="flex flex-col md:flex-row h-full overflow-hidden">
-        {/* Money ladder */}
-        <div className="md:w-1/4 bg-millionaire-primary border-r border-millionaire-accent overflow-hidden">
+        {/* Money ladder - reduced width from md:w-1/4 to md:w-1/5 */}
+        <div className="md:w-1/5 bg-millionaire-primary border-r border-millionaire-accent overflow-hidden">
           <ScrollArea className="h-[calc(100vh-128px)]">
             <div className="p-4">
               <MoneyLadder currentLevel={currentQuestionIndex} quizConfig={quizConfig} />
@@ -540,8 +541,8 @@ const GameScreen = ({
           </ScrollArea>
         </div>
         
-        {/* Question area */}
-        <div className="md:w-3/4 flex-grow flex flex-col items-center justify-center p-4">
+        {/* Question area - increased width from md:w-3/4 to md:w-4/5 */}
+        <div className="md:w-4/5 flex-grow flex flex-col items-center justify-center p-4">
           {!gameStarted ? (
             <div className="flex flex-col items-center justify-center h-full">
               <div className="text-center mb-8">
