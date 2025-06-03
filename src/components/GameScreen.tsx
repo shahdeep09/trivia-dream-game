@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import Question from "./Question";
@@ -246,7 +245,8 @@ const GameScreen = ({
           .update({
             points: updatedTeam.points,
             games_played: updatedTeam.gamesPlayed,
-            total_lifelines_used: updatedTeam.totalLifelinesUsed
+            total_lifelines_used: updatedTeam.totalLifelinesUsed,
+            updated_at: new Date().toISOString()
           })
           .eq('id', teamId)
           .eq('quiz_id', quizConfig.id);
@@ -277,8 +277,8 @@ const GameScreen = ({
           teams[teamIndex] = updatedTeam;
           localStorage.setItem(`teams-${quizConfig.id}`, JSON.stringify(teams));
           
-          // Also update the main millionaire-teams for backward compatibility
-          localStorage.setItem("millionaire-teams", JSON.stringify(teams));
+          // Also update the main quiz-teams for backward compatibility
+          localStorage.setItem("quiz-teams", JSON.stringify(teams));
           
           // Dispatch update event with quiz isolation
           const customEvent = new CustomEvent('teamDataUpdated', { 
@@ -310,7 +310,7 @@ const GameScreen = ({
 
     // Update team data with the new function
     if (teamId) {
-      const savedTeams = localStorage.getItem("millionaire-teams");
+      const savedTeams = localStorage.getItem(`teams-${quizConfig.id}`) || localStorage.getItem("quiz-teams");
       if (savedTeams) {
         const teams: Team[] = JSON.parse(savedTeams);
         const team = teams.find(t => t.id === teamId);
@@ -398,12 +398,22 @@ const GameScreen = ({
   const getCurrentTeamName = (): string => {
     if (!teamId) return "";
     
-    const savedTeams = localStorage.getItem("millionaire-teams");
+    // Try quiz-specific teams first
+    const quizTeams = localStorage.getItem(`teams-${quizConfig.id}`);
+    if (quizTeams) {
+      const teams: Team[] = JSON.parse(quizTeams);
+      const team = teams.find(t => t.id === teamId);
+      if (team) return team.name;
+    }
+    
+    // Fallback to general teams
+    const savedTeams = localStorage.getItem("quiz-teams");
     if (savedTeams) {
       const teams: Team[] = JSON.parse(savedTeams);
       const team = teams.find(t => t.id === teamId);
       return team ? team.name : "";
     }
+    
     return "";
   };
 

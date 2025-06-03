@@ -10,7 +10,10 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { useQuizConfig } from "@/hooks/useQuizConfig";
 import { useNavigate } from "react-router-dom";
 import { QuizConfig } from "@/types/quiz";
-import { Team, loadTeams, saveTeams } from "@/utils/gameUtils";
+import { Team, saveTeams } from "@/utils/gameUtils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState("teams");
@@ -18,22 +21,117 @@ const Home = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
+  // Load quiz data and initialize teams based on quiz configuration
   useEffect(() => {
-    const loadQuizData = () => {
-      const quizConfig = localStorage.getItem("current-quiz-config");
-      if (quizConfig) {
-        const config = JSON.parse(quizConfig);
-        setCurrentQuizConfig(config);
-        
-        // Load teams for this quiz
-        const loadedTeams = loadTeams();
-        setTeams(loadedTeams);
+    const loadQuizData = async () => {
+      try {
+        const quizConfig = localStorage.getItem("current-quiz-config");
+        if (quizConfig) {
+          const config = JSON.parse(quizConfig);
+          setCurrentQuizConfig(config);
+          
+          // Initialize teams based on quiz configuration
+          await initializeTeamsFromConfig(config);
+        }
+      } catch (error) {
+        console.error("Error loading quiz data:", error);
       }
     };
 
     loadQuizData();
-  }, [refreshKey]);
+  }, [refreshKey, user]);
+
+  // Initialize teams from quiz configuration
+  const initializeTeamsFromConfig = async (config: QuizConfig) => {
+    try {
+      let loadedTeams: Team[] = [];
+
+      // First try to load from Supabase if user is authenticated
+      if (user && config.id) {
+        const { data: supabaseTeams, error } = await supabase
+          .from('teams')
+          .select('*')
+          .eq('quiz_id', config.id)
+          .eq('user_id', user.id);
+
+        if (!error && supabaseTeams && supabaseTeams.length > 0) {
+          // Convert Supabase data to Team format
+          loadedTeams = supabaseTeams.map(team => ({
+            id: team.id,
+            name: team.name,
+            points: team.points || 0,
+            gamesPlayed: team.games_played || 0,
+            bonusPoints: team.bonus_points || 0,
+            totalLifelinesUsed: team.total_lifelines_used || 0
+          }));
+        } else {
+          // Create teams from quiz config if not found in Supabase
+          loadedTeams = await createTeamsFromConfig(config);
+        }
+      } else {
+        // Fallback to localStorage or create from config
+        const savedTeams = localStorage.getItem(`teams-${config.id}`);
+        if (savedTeams) {
+          loadedTeams = JSON.parse(savedTeams);
+        } else {
+          loadedTeams = await createTeamsFromConfig(config);
+        }
+      }
+
+      setTeams(loadedTeams);
+    } catch (error) {
+      console.error("Error initializing teams:", error);
+      // Fallback to creating teams from config
+      const fallbackTeams = await createTeamsFromConfig(config);
+      setTeams(fallbackTeams);
+    }
+  };
+
+  // Create teams from quiz configuration
+  const createTeamsFromConfig = async (config: QuizConfig): Promise<Team[]> => {
+    const newTeams = config.teamNames.map((name, index) => ({
+      id: crypto.randomUUID(),
+      name: name,
+      points: 0,
+      gamesPlayed: 0,
+      bonusPoints: 0,
+      totalLifelinesUsed: 0
+    }));
+
+    // Save to Supabase if user is authenticated
+    if (user && config.id) {
+      try {
+        const teamsData = newTeams.map(team => ({
+          id: team.id,
+          quiz_id: config.id,
+          user_id: user.id,
+          name: team.name,
+          points: team.points,
+          games_played: team.gamesPlayed,
+          bonus_points: team.bonusPoints,
+          total_lifelines_used: team.totalLifelinesUsed
+        }));
+
+        const { error } = await supabase
+          .from('teams')
+          .upsert(teamsData);
+
+        if (error) {
+          console.error('Error saving teams to Supabase:', error);
+        }
+      } catch (error) {
+        console.error('Error creating teams in Supabase:', error);
+      }
+    }
+
+    // Also save to localStorage as backup
+    localStorage.setItem(`teams-${config.id}`, JSON.stringify(newTeams));
+    localStorage.setItem("quiz-teams", JSON.stringify(newTeams));
+
+    return newTeams;
+  };
 
   const forceRefresh = () => {
     setRefreshKey(prev => prev + 1);
@@ -53,8 +151,51 @@ const Home = () => {
   };
 
   const saveBonusPoints = async (teamId: string) => {
-    saveTeams(teams);
-    forceRefresh();
+    try {
+      const teamToUpdate = teams.find(team => team.id === teamId);
+      if (!teamToUpdate || !currentQuizConfig) return;
+
+      // Save to Supabase if user is authenticated
+      if (user && currentQuizConfig.id) {
+        const { error } = await supabase
+          .from('teams')
+          .update({
+            bonus_points: teamToUpdate.bonusPoints || 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', teamId)
+          .eq('quiz_id', currentQuizConfig.id)
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error('Error updating bonus points in Supabase:', error);
+          toast({
+            title: "Error",
+            description: "Failed to save bonus points to database",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Update localStorage as backup
+      localStorage.setItem(`teams-${currentQuizConfig.id}`, JSON.stringify(teams));
+      localStorage.setItem("quiz-teams", JSON.stringify(teams));
+      
+      toast({
+        title: "Success",
+        description: `Bonus points saved for ${teamToUpdate.name}`,
+      });
+      
+      forceRefresh();
+    } catch (error) {
+      console.error('Error saving bonus points:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save bonus points",
+        variant: "destructive"
+      });
+    }
   };
 
   if (!currentQuizConfig) {
