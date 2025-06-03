@@ -1,14 +1,16 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import QuizHeader from "@/components/home/QuizHeader";
 import TeamsTab from "@/components/home/TeamsTab";
+import PointsTable from "@/components/home/PointsTable";
 import NoQuizConfigured from "@/components/home/NoQuizConfigured";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { useQuizConfig } from "@/hooks/useQuizConfig";
 import { useNavigate } from "react-router-dom";
 import { QuizConfig } from "@/types/quiz";
-import { Team, loadTeams } from "@/utils/gameUtils";
+import { Team, loadTeams, saveTeams } from "@/utils/gameUtils";
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState("teams");
@@ -39,6 +41,20 @@ const Home = () => {
 
   const calculateTotalPoints = (team: Team): number => {
     return (team.points || 0) + (team.bonusPoints || 0);
+  };
+
+  const handleBonusPointsChange = (teamId: string, value: string) => {
+    const updatedTeams = teams.map(team => 
+      team.id === teamId 
+        ? { ...team, bonusPoints: parseInt(value) || 0 }
+        : team
+    );
+    setTeams(updatedTeams);
+  };
+
+  const saveBonusPoints = async (teamId: string) => {
+    saveTeams(teams);
+    forceRefresh();
   };
 
   if (!currentQuizConfig) {
@@ -74,7 +90,7 @@ const Home = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
-          <TabsList className="grid w-full grid-cols-3 bg-millionaire-dark border border-millionaire-accent">
+          <TabsList className="grid w-full grid-cols-2 bg-millionaire-dark border border-millionaire-accent">
             <TabsTrigger 
               value="teams"
               className="data-[state=active]:bg-millionaire-accent data-[state=active]:text-millionaire-dark"
@@ -82,16 +98,10 @@ const Home = () => {
               Teams
             </TabsTrigger>
             <TabsTrigger 
-              value="questions"
+              value="points"
               className="data-[state=active]:bg-millionaire-accent data-[state=active]:text-millionaire-dark"
             >
-              Questions
-            </TabsTrigger>
-            <TabsTrigger 
-              value="game"
-              className="data-[state=active]:bg-millionaire-accent data-[state=active]:text-millionaire-dark"
-            >
-              Game
+              Points Table
             </TabsTrigger>
           </TabsList>
 
@@ -103,31 +113,13 @@ const Home = () => {
             />
           </TabsContent>
 
-          <TabsContent value="questions">
-            <div className="bg-millionaire-card border border-millionaire-accent rounded-lg p-6">
-              <h2 className="text-2xl font-bold text-millionaire-gold mb-4">Question Management</h2>
-              <p className="text-millionaire-light mb-4">Upload and manage your quiz questions</p>
-              <Button
-                onClick={() => navigate("/manager")}
-                className="bg-millionaire-gold hover:bg-millionaire-gold/90 text-millionaire-dark"
-              >
-                Open Question Manager
-              </Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="game">
-            <div className="bg-millionaire-card border border-millionaire-accent rounded-lg p-6">
-              <h2 className="text-2xl font-bold text-millionaire-gold mb-4">Game Control</h2>
-              <p className="text-millionaire-light mb-4">Start and control your quiz game</p>
-              <Button
-                onClick={() => navigate("/game")}
-                className="bg-millionaire-gold hover:bg-millionaire-gold/90 text-millionaire-dark"
-              >
-                Start Game
-              </Button>
-            </div>
-          </TabsContent>
+          <PointsTable 
+            teams={teams}
+            refreshKey={refreshKey}
+            calculateTotalPoints={calculateTotalPoints}
+            handleBonusPointsChange={handleBonusPointsChange}
+            saveBonusPoints={saveBonusPoints}
+          />
         </Tabs>
       </div>
     </div>
