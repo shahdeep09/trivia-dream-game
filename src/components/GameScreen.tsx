@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import Question from "./Question";
@@ -13,6 +14,7 @@ import Lifeline from "./Lifeline";
 import { QuizConfig } from "@/types/quiz";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface GameScreenProps {
   questions: QuestionType[];
@@ -54,9 +56,11 @@ const GameScreen = ({
   const [showExplanation, setShowExplanation] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const [teamName, setTeamName] = useState<string>("");
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const windowSize = useWindowSize();
+  const { user } = useAuth();
   
   // Lifelines - map to generic types but track by quiz config
   const [lifelinesUsed, setLifelinesUsed] = useState<Record<string, boolean>>({});
@@ -76,6 +80,44 @@ const GameScreen = ({
       setLifelinesUsed(initialLifelines);
     }
   }, [quizConfig]);
+
+  // Load team name when component mounts
+  useEffect(() => {
+    const loadTeamName = async () => {
+      if (!teamId || !user) {
+        setTeamName("");
+        return;
+      }
+
+      try {
+        // Try user-specific teams first
+        const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
+        const userTeams = localStorage.getItem(userSpecificKey);
+        
+        if (userTeams) {
+          const teams: Team[] = JSON.parse(userTeams);
+          const team = teams.find(t => t.id === teamId);
+          if (team) {
+            setTeamName(team.name);
+            return;
+          }
+        }
+        
+        // Fallback to general teams
+        const savedTeams = localStorage.getItem("quiz-teams");
+        if (savedTeams) {
+          const teams: Team[] = JSON.parse(savedTeams);
+          const team = teams.find(t => t.id === teamId);
+          setTeamName(team ? team.name : "");
+        }
+      } catch (error) {
+        console.error("Error loading team name:", error);
+        setTeamName("");
+      }
+    };
+
+    loadTeamName();
+  }, [teamId, user, quizConfig.id]);
 
   // Prepare questions when game starts
   useEffect(() => {
@@ -229,6 +271,16 @@ const GameScreen = ({
   const updateTeamData = async (teamToUpdate: Team, pointsToAdd: number) => {
     console.log('Updating team data:', teamToUpdate.name, 'Adding points:', pointsToAdd);
     
+    if (!user) {
+      console.error('No authenticated user found');
+      toast({
+        title: "Error",
+        description: "User not authenticated",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       const updatedTeam = {
         ...teamToUpdate,
@@ -236,19 +288,6 @@ const GameScreen = ({
         gamesPlayed: teamToUpdate.gamesPlayed + 1,
         totalLifelinesUsed: (teamToUpdate.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
       };
-
-      // Get current user from auth context - properly await the promise
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        console.error('No authenticated user found:', userError);
-        toast({
-          title: "Error",
-          description: "User not authenticated",
-          variant: "destructive"
-        });
-        return;
-      }
 
       // Update in Supabase with proper user isolation
       if (quizConfig?.id && teamId) {
@@ -321,18 +360,19 @@ const GameScreen = ({
     }
   };
 
-  const handleGameEnd = () => {
+  const handleGameEnd = async () => {
     setResultDialogOpen(false);
     setShowConfetti(false);
 
     // Update team data with the new function
-    if (teamId) {
-      const savedTeams = localStorage.getItem(`teams-${quizConfig.id}`) || localStorage.getItem("quiz-teams");
+    if (teamId && user) {
+      const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
+      const savedTeams = localStorage.getItem(userSpecificKey) || localStorage.getItem("quiz-teams");
       if (savedTeams) {
         const teams: Team[] = JSON.parse(savedTeams);
         const team = teams.find(t => t.id === teamId);
         if (team) {
-          updateTeamData(team, cumulativePoints);
+          await updateTeamData(team, cumulativePoints);
         }
       }
     }
@@ -412,46 +452,6 @@ const GameScreen = ({
     }
   };
 
-  const getCurrentTeamName = (): string => {
-    if (!teamId) return "";
-    
-    // Try user-specific teams first by getting current user properly
-    const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
-        const userTeams = localStorage.getItem(userSpecificKey);
-        if (userTeams) {
-          const teams: Team[] = JSON.parse(userTeams);
-          const team = teams.find(t => t.id === teamId);
-          if (team) return team.name;
-        }
-      }
-      
-      // Fallback to general teams
-      const savedTeams = localStorage.getItem("quiz-teams");
-      if (savedTeams) {
-        const teams: Team[] = JSON.parse(savedTeams);
-        const team = teams.find(t => t.id === teamId);
-        return team ? team.name : "";
-      }
-      
-      return "";
-    };
-
-    // Since this is a render function, we'll use a different approach
-    // Try general teams first as fallback
-    const savedTeams = localStorage.getItem("quiz-teams");
-    if (savedTeams) {
-      const teams: Team[] = JSON.parse(savedTeams);
-      const team = teams.find(t => t.id === teamId);
-      return team ? team.name : "";
-    }
-    
-    return "";
-  };
-
-  const teamName = getCurrentTeamName();
   const currentConfig = quizConfig.questionConfig[currentQuestionIndex] || { points: 100, timeLimit: 30 };
 
   if (!currentQuestion) {
