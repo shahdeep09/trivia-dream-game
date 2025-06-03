@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -198,7 +197,7 @@ const QuizManager = () => {
                     </p>
                     <p className="text-sm">
                       <span className="font-medium">Created:</span>{" "}
-                      {new Date(quiz.createdAt).toLocaleDateString()}
+                      {new Date(quiz.createdAt).toLocaleDateString()} at {new Date(quiz.createdAt).toLocaleTimeString()}
                     </p>
                   </div>
                   
