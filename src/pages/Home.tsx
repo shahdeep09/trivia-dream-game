@@ -7,10 +7,9 @@ import TeamsTab from "@/components/home/TeamsTab";
 import PointsTable from "@/components/home/PointsTable";
 import NoQuizConfigured from "@/components/home/NoQuizConfigured";
 import { UserMenu } from "@/components/auth/UserMenu";
-import { useQuizConfig } from "@/hooks/useQuizConfig";
 import { useNavigate } from "react-router-dom";
 import { QuizConfig } from "@/types/quiz";
-import { Team, saveTeams } from "@/utils/gameUtils";
+import { Team } from "@/utils/gameUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -26,14 +25,26 @@ const Home = () => {
   // Load quiz data and initialize teams based on quiz configuration
   useEffect(() => {
     const loadQuizData = async () => {
+      if (!user) {
+        console.log('No user logged in, clearing data');
+        setCurrentQuizConfig(null);
+        setTeams([]);
+        return;
+      }
+
       try {
         const quizConfig = localStorage.getItem("current-quiz-config");
         if (quizConfig) {
           const config = JSON.parse(quizConfig);
+          console.log('Loading quiz config:', config);
           setCurrentQuizConfig(config);
           
-          // Initialize teams based on quiz configuration
+          // Initialize teams based on quiz configuration for current user
           await initializeTeamsFromConfig(config);
+        } else {
+          console.log('No quiz config found');
+          setCurrentQuizConfig(null);
+          setTeams([]);
         }
       } catch (error) {
         console.error("Error loading quiz data:", error);
@@ -43,13 +54,19 @@ const Home = () => {
     loadQuizData();
   }, [refreshKey, user]);
 
-  // Initialize teams from quiz configuration
+  // Initialize teams from quiz configuration for current user only
   const initializeTeamsFromConfig = async (config: QuizConfig) => {
+    if (!user) {
+      console.log('No user, cannot initialize teams');
+      return;
+    }
+
     try {
       let loadedTeams: Team[] = [];
 
-      // First try to load from Supabase if user is authenticated
-      if (user && config.id) {
+      // Try to load from Supabase for current user and quiz
+      if (config.id) {
+        console.log('Loading teams from Supabase for user:', user.id, 'quiz:', config.id);
         const { data: supabaseTeams, error } = await supabase
           .from('teams')
           .select('*')
@@ -57,6 +74,7 @@ const Home = () => {
           .eq('user_id', user.id);
 
         if (!error && supabaseTeams && supabaseTeams.length > 0) {
+          console.log('Found teams in Supabase:', supabaseTeams);
           // Convert Supabase data to Team format
           loadedTeams = supabaseTeams.map(team => ({
             id: team.id,
@@ -67,20 +85,17 @@ const Home = () => {
             totalLifelinesUsed: team.total_lifelines_used || 0
           }));
         } else {
-          // Create teams from quiz config if not found in Supabase
+          console.log('No teams found in Supabase, creating from config');
+          // Create teams from quiz config
           loadedTeams = await createTeamsFromConfig(config);
         }
       } else {
-        // Fallback to localStorage or create from config
-        const savedTeams = localStorage.getItem(`teams-${config.id}`);
-        if (savedTeams) {
-          loadedTeams = JSON.parse(savedTeams);
-        } else {
-          loadedTeams = await createTeamsFromConfig(config);
-        }
+        console.log('No quiz ID, creating teams from config');
+        loadedTeams = await createTeamsFromConfig(config);
       }
 
       setTeams(loadedTeams);
+      console.log('Teams loaded:', loadedTeams);
     } catch (error) {
       console.error("Error initializing teams:", error);
       // Fallback to creating teams from config
@@ -89,8 +104,13 @@ const Home = () => {
     }
   };
 
-  // Create teams from quiz configuration
+  // Create teams from quiz configuration for current user
   const createTeamsFromConfig = async (config: QuizConfig): Promise<Team[]> => {
+    if (!user) {
+      console.log('No user, cannot create teams');
+      return [];
+    }
+
     const newTeams = config.teamNames.map((name, index) => ({
       id: crypto.randomUUID(),
       name: name,
@@ -100,34 +120,53 @@ const Home = () => {
       totalLifelinesUsed: 0
     }));
 
-    // Save to Supabase if user is authenticated
-    if (user && config.id) {
+    console.log('Creating new teams:', newTeams);
+
+    // Save to Supabase if user is authenticated and quiz exists
+    if (config.id) {
       try {
-        const teamsData = newTeams.map(team => ({
-          id: team.id,
-          quiz_id: config.id,
-          user_id: user.id,
-          name: team.name,
-          points: team.points,
-          games_played: team.gamesPlayed,
-          bonus_points: team.bonusPoints,
-          total_lifelines_used: team.totalLifelinesUsed
-        }));
+        // First check if quiz exists in Supabase
+        const { data: quizExists } = await supabase
+          .from('quizzes')
+          .select('id')
+          .eq('id', config.id)
+          .eq('user_id', user.id)
+          .single();
 
-        const { error } = await supabase
-          .from('teams')
-          .upsert(teamsData);
+        if (quizExists) {
+          const teamsData = newTeams.map(team => ({
+            id: team.id,
+            quiz_id: config.id,
+            user_id: user.id,
+            name: team.name,
+            points: team.points,
+            games_played: team.gamesPlayed,
+            bonus_points: team.bonusPoints,
+            total_lifelines_used: team.totalLifelinesUsed
+          }));
 
-        if (error) {
-          console.error('Error saving teams to Supabase:', error);
+          const { error } = await supabase
+            .from('teams')
+            .upsert(teamsData);
+
+          if (error) {
+            console.error('Error saving teams to Supabase:', error);
+          } else {
+            console.log('Teams saved to Supabase successfully');
+          }
+        } else {
+          console.log('Quiz not found in Supabase, saving only to localStorage');
         }
       } catch (error) {
         console.error('Error creating teams in Supabase:', error);
       }
     }
 
-    // Also save to localStorage as backup
-    localStorage.setItem(`teams-${config.id}`, JSON.stringify(newTeams));
+    // Also save to localStorage as backup with user-specific key
+    const userSpecificKey = `teams-${config.id}-${user.id}`;
+    localStorage.setItem(userSpecificKey, JSON.stringify(newTeams));
+    
+    // Update the general quiz-teams for backward compatibility
     localStorage.setItem("quiz-teams", JSON.stringify(newTeams));
 
     return newTeams;
@@ -151,12 +190,23 @@ const Home = () => {
   };
 
   const saveBonusPoints = async (teamId: string) => {
+    if (!user || !currentQuizConfig) {
+      toast({
+        title: "Error",
+        description: "User not authenticated or no quiz configuration",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const teamToUpdate = teams.find(team => team.id === teamId);
-      if (!teamToUpdate || !currentQuizConfig) return;
+      if (!teamToUpdate) return;
 
-      // Save to Supabase if user is authenticated
-      if (user && currentQuizConfig.id) {
+      console.log('Saving bonus points for team:', teamToUpdate.name, 'points:', teamToUpdate.bonusPoints);
+
+      // Save to Supabase if quiz ID exists
+      if (currentQuizConfig.id) {
         const { error } = await supabase
           .from('teams')
           .update({
@@ -175,11 +225,14 @@ const Home = () => {
             variant: "destructive"
           });
           return;
+        } else {
+          console.log('Bonus points saved to Supabase successfully');
         }
       }
 
-      // Update localStorage as backup
-      localStorage.setItem(`teams-${currentQuizConfig.id}`, JSON.stringify(teams));
+      // Update localStorage with user-specific key
+      const userSpecificKey = `teams-${currentQuizConfig.id}-${user.id}`;
+      localStorage.setItem(userSpecificKey, JSON.stringify(teams));
       localStorage.setItem("quiz-teams", JSON.stringify(teams));
       
       toast({

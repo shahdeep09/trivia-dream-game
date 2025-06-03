@@ -237,9 +237,22 @@ const GameScreen = ({
         totalLifelinesUsed: (teamToUpdate.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
       };
 
-      // Update in Supabase first - only for current quiz
+      // Get current user from auth context
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.error('No authenticated user found');
+        toast({
+          title: "Error",
+          description: "User not authenticated",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Update in Supabase with proper user isolation
       if (quizConfig?.id && teamId) {
-        console.log('Updating team in Supabase:', teamId, 'Quiz:', quizConfig.id);
+        console.log('Updating team in Supabase:', teamId, 'Quiz:', quizConfig.id, 'User:', user.id);
         const { error } = await supabase
           .from('teams')
           .update({
@@ -249,7 +262,8 @@ const GameScreen = ({
             updated_at: new Date().toISOString()
           })
           .eq('id', teamId)
-          .eq('quiz_id', quizConfig.id);
+          .eq('quiz_id', quizConfig.id)
+          .eq('user_id', user.id);
 
         if (error) {
           console.error('Error updating team in Supabase:', error);
@@ -267,20 +281,22 @@ const GameScreen = ({
         }
       }
 
-      // Update localStorage as backup - filter by current quiz
-      const savedTeams = localStorage.getItem(`teams-${quizConfig.id}`);
+      // Update localStorage with user-specific key
+      const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
+      const savedTeams = localStorage.getItem(userSpecificKey);
+      
       if (savedTeams) {
         const teams: Team[] = JSON.parse(savedTeams);
         const teamIndex = teams.findIndex(team => team.id === teamId);
         
         if (teamIndex !== -1) {
           teams[teamIndex] = updatedTeam;
-          localStorage.setItem(`teams-${quizConfig.id}`, JSON.stringify(teams));
+          localStorage.setItem(userSpecificKey, JSON.stringify(teams));
           
           // Also update the main quiz-teams for backward compatibility
           localStorage.setItem("quiz-teams", JSON.stringify(teams));
           
-          // Dispatch update event with quiz isolation
+          // Dispatch update event with quiz and user isolation
           const customEvent = new CustomEvent('teamDataUpdated', { 
             detail: { 
               teamId, 
@@ -288,6 +304,7 @@ const GameScreen = ({
               gamesPlayed: 1, 
               lifelinesUsed: totalLifelinesUsedInGame,
               quizId: quizConfig.id,
+              userId: user.id,
               timestamp: Date.now()
             } 
           });
@@ -398,13 +415,19 @@ const GameScreen = ({
   const getCurrentTeamName = (): string => {
     if (!teamId) return "";
     
-    // Try quiz-specific teams first
-    const quizTeams = localStorage.getItem(`teams-${quizConfig.id}`);
-    if (quizTeams) {
-      const teams: Team[] = JSON.parse(quizTeams);
-      const team = teams.find(t => t.id === teamId);
-      if (team) return team.name;
-    }
+    // Try user-specific teams first
+    const { data: { user } } = supabase.auth.getUser();
+    user.then(({ user: currentUser }) => {
+      if (currentUser) {
+        const userSpecificKey = `teams-${quizConfig.id}-${currentUser.id}`;
+        const userTeams = localStorage.getItem(userSpecificKey);
+        if (userTeams) {
+          const teams: Team[] = JSON.parse(userTeams);
+          const team = teams.find(t => t.id === teamId);
+          if (team) return team.name;
+        }
+      }
+    });
     
     // Fallback to general teams
     const savedTeams = localStorage.getItem("quiz-teams");
