@@ -22,6 +22,53 @@ const Home = () => {
     setRefreshKey(prev => prev + 1);
   };
 
+  // Ensure quiz exists in Supabase before proceeding
+  const ensureQuizExistsInSupabase = async (config: QuizConfig) => {
+    try {
+      // Check if quiz exists in Supabase
+      const { data: existingQuiz, error: checkError } = await supabase
+        .from('quizzes')
+        .select('id')
+        .eq('id', config.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking quiz existence:', checkError);
+        return false;
+      }
+
+      if (!existingQuiz) {
+        // Quiz doesn't exist, create it
+        console.log('Quiz not found in Supabase, creating it:', config.id);
+        const { error: insertError } = await supabase
+          .from('quizzes')
+          .insert({
+            id: config.id,
+            samaj_name: config.samajName,
+            number_of_questions: config.numberOfQuestions,
+            number_of_teams: config.numberOfTeams,
+            question_config: config.questionConfig,
+            selected_lifelines: config.selectedLifelines,
+            team_names: config.teamNames,
+            logo: config.logo,
+            created_at: config.createdAt
+          });
+
+        if (insertError) {
+          console.error('Error creating quiz in Supabase:', insertError);
+          return false;
+        }
+        
+        console.log('Quiz created successfully in Supabase');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error ensuring quiz exists:', error);
+      return false;
+    }
+  };
+
   // Load teams data from Supabase for current quiz ONLY
   const loadTeamsData = async () => {
     console.log('Loading teams data from Supabase...');
@@ -37,6 +84,19 @@ const Home = () => {
     const config: QuizConfig = JSON.parse(savedConfig);
     setCurrentQuizConfig(config);
 
+    // Ensure quiz exists in Supabase first
+    const quizExists = await ensureQuizExistsInSupabase(config);
+    if (!quizExists) {
+      toast({
+        title: "Error",
+        description: "Failed to ensure quiz exists in database. Using local data only.",
+        variant: "destructive"
+      });
+      // Fallback to creating teams from config
+      createTeamsFromConfig(config, false);
+      return;
+    }
+
     try {
       // Load teams from Supabase for this specific quiz ONLY
       const { data: teamsData, error } = await supabase
@@ -48,7 +108,7 @@ const Home = () => {
       if (error) {
         console.error('Error loading teams from Supabase:', error);
         // Fallback to creating teams from config if not exists
-        createTeamsFromConfig(config);
+        createTeamsFromConfig(config, true);
       } else if (teamsData && teamsData.length > 0) {
         // Convert Supabase data to Team format
         const formattedTeams: Team[] = teamsData.map(team => ({
@@ -68,16 +128,16 @@ const Home = () => {
         localStorage.setItem("millionaire-teams", JSON.stringify(formattedTeams));
       } else {
         // No teams found, create them
-        createTeamsFromConfig(config);
+        createTeamsFromConfig(config, true);
       }
     } catch (error) {
       console.error('Error loading teams:', error);
       // Fallback to creating from config
-      createTeamsFromConfig(config);
+      createTeamsFromConfig(config, true);
     }
   };
 
-  const createTeamsFromConfig = async (config: QuizConfig) => {
+  const createTeamsFromConfig = async (config: QuizConfig, saveToSupabase: boolean = true) => {
     console.log('Creating teams from config for quiz:', config.id);
     
     const configuredTeams: Team[] = config.teamNames.map((name, index) => ({
@@ -89,29 +149,36 @@ const Home = () => {
       totalLifelinesUsed: 0
     }));
     
-    try {
-      // Save teams to Supabase with quiz_id
-      const teamsData = configuredTeams.map(team => ({
-        id: team.id,
-        quiz_id: config.id,
-        name: team.name,
-        points: team.points,
-        games_played: team.gamesPlayed,
-        bonus_points: team.bonusPoints,
-        total_lifelines_used: team.totalLifelinesUsed
-      }));
+    if (saveToSupabase) {
+      try {
+        // Save teams to Supabase with quiz_id
+        const teamsData = configuredTeams.map(team => ({
+          id: team.id,
+          quiz_id: config.id,
+          name: team.name,
+          points: team.points,
+          games_played: team.gamesPlayed,
+          bonus_points: team.bonusPoints,
+          total_lifelines_used: team.totalLifelinesUsed
+        }));
 
-      const { error } = await supabase
-        .from('teams')
-        .insert(teamsData);
+        const { error } = await supabase
+          .from('teams')
+          .insert(teamsData);
 
-      if (error) {
-        console.error('Error saving teams to Supabase:', error);
-      } else {
-        console.log('Teams saved to Supabase successfully for quiz:', config.id);
+        if (error) {
+          console.error('Error saving teams to Supabase:', error);
+          toast({
+            title: "Warning",
+            description: "Teams created locally but failed to save to database",
+            variant: "destructive"
+          });
+        } else {
+          console.log('Teams saved to Supabase successfully for quiz:', config.id);
+        }
+      } catch (error) {
+        console.error('Error creating teams in Supabase:', error);
       }
-    } catch (error) {
-      console.error('Error creating teams in Supabase:', error);
     }
     
     setTeams(configuredTeams);
