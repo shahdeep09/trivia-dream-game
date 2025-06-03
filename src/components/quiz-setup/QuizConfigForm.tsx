@@ -55,7 +55,7 @@ export const QuizConfigForm = ({
               <img src={logo} alt="Logo preview" className="w-16 h-16 object-cover rounded" />
             )}
           </div>
-          <p className="text-sm text-millionaire-light">300px x 300px recommended. Default logo will be used if not uploaded.</p>
+          <p className="text-sm text-millionaire-light">300px x 300px recommended. Default "Kaun Banega Gyani" logo will be used if not uploaded.</p>
         </div>
 
         <div className="space-y-2">
@@ -85,7 +85,7 @@ export const QuizConfigForm = ({
             ))}
           </div>
           <p className="text-sm text-millionaire-light">
-            Roll the Dice Rule: 1-2 Get Hint, 3-4-5 Nothing Happens, 6 Skip Question
+            Roll the Dice: You will manually roll the dice offline. Ask the Expert & Audience Poll: Use these lifelines when needed offline.
           </p>
         </div>
 

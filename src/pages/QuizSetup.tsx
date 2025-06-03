@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { QuizConfigForm } from "@/components/quiz-setup/QuizConfigForm";
 import { QuestionConfigDialog } from "@/components/quiz-setup/QuestionConfigDialog";
 import { TeamNamesDialog } from "@/components/quiz-setup/TeamNamesDialog";
 import { QuizHistoryCard } from "@/components/quiz-setup/QuizHistoryCard";
+import { supabase } from "@/integrations/supabase/client";
 
 const QuizSetup = () => {
   const navigate = useNavigate();
@@ -28,11 +28,47 @@ const QuizSetup = () => {
   const [quizHistory, setQuizHistory] = useState<QuizConfig[]>([]);
 
   useEffect(() => {
-    const savedHistory = localStorage.getItem("quiz-history");
-    if (savedHistory) {
-      setQuizHistory(JSON.parse(savedHistory));
-    }
+    loadQuizHistory();
   }, []);
+
+  const loadQuizHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('quizzes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading quiz history:', error);
+        // Fallback to localStorage if Supabase fails
+        const savedHistory = localStorage.getItem("quiz-history");
+        if (savedHistory) {
+          setQuizHistory(JSON.parse(savedHistory));
+        }
+      } else {
+        // Convert Supabase data to QuizConfig format
+        const formattedQuizzes: QuizConfig[] = data.map(quiz => ({
+          id: quiz.id,
+          logo: quiz.logo,
+          numberOfQuestions: quiz.number_of_questions,
+          questionConfig: quiz.question_config,
+          selectedLifelines: quiz.selected_lifelines,
+          numberOfTeams: quiz.number_of_teams,
+          teamNames: quiz.team_names,
+          samajName: quiz.samaj_name,
+          createdAt: quiz.created_at
+        }));
+        setQuizHistory(formattedQuizzes);
+      }
+    } catch (error) {
+      console.error('Error loading quiz history:', error);
+      // Fallback to localStorage
+      const savedHistory = localStorage.getItem("quiz-history");
+      if (savedHistory) {
+        setQuizHistory(JSON.parse(savedHistory));
+      }
+    }
+  };
 
   useEffect(() => {
     if (numberOfQuestions > 0) {
@@ -112,7 +148,7 @@ const QuizSetup = () => {
     setTeamNames(updatedNames);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!samajName.trim()) {
       toast({
         title: "Missing Information",
@@ -131,8 +167,9 @@ const QuizSetup = () => {
       return;
     }
 
+    const quizId = crypto.randomUUID();
     const quizConfig: QuizConfig = {
-      id: Date.now().toString(),
+      id: quizId,
       logo,
       numberOfQuestions,
       questionConfig,
@@ -143,21 +180,90 @@ const QuizSetup = () => {
       createdAt: new Date().toISOString()
     };
 
-    const updatedHistory = [...quizHistory, quizConfig];
-    setQuizHistory(updatedHistory);
-    localStorage.setItem("quiz-history", JSON.stringify(updatedHistory));
-    localStorage.setItem("current-quiz-config", JSON.stringify(quizConfig));
+    try {
+      // Save to Supabase
+      const { error: quizError } = await supabase
+        .from('quizzes')
+        .insert({
+          id: quizId,
+          samaj_name: samajName,
+          logo,
+          number_of_questions: numberOfQuestions,
+          number_of_teams: numberOfTeams,
+          selected_lifelines: selectedLifelines,
+          question_config: questionConfig,
+          team_names: teamNames
+        });
 
-    toast({
-      title: "Quiz Created Successfully",
-      description: "Your quiz has been configured and saved",
-    });
+      if (quizError) {
+        console.error('Error saving quiz to Supabase:', quizError);
+        throw quizError;
+      }
 
-    navigate("/");
+      // Create teams in Supabase
+      const teamsData = teamNames.map(name => ({
+        quiz_id: quizId,
+        name
+      }));
+
+      const { error: teamsError } = await supabase
+        .from('teams')
+        .insert(teamsData);
+
+      if (teamsError) {
+        console.error('Error saving teams to Supabase:', teamsError);
+      }
+
+      // Update local history
+      const updatedHistory = [...quizHistory, quizConfig];
+      setQuizHistory(updatedHistory);
+      
+      // Keep localStorage as backup
+      localStorage.setItem("quiz-history", JSON.stringify(updatedHistory));
+      localStorage.setItem("current-quiz-config", JSON.stringify(quizConfig));
+
+      toast({
+        title: "Quiz Created Successfully",
+        description: "Your quiz has been configured and saved to database",
+      });
+
+      navigate("/");
+    } catch (error) {
+      console.error('Error saving quiz:', error);
+      // Fallback to localStorage only
+      const updatedHistory = [...quizHistory, quizConfig];
+      setQuizHistory(updatedHistory);
+      localStorage.setItem("quiz-history", JSON.stringify(updatedHistory));
+      localStorage.setItem("current-quiz-config", JSON.stringify(quizConfig));
+
+      toast({
+        title: "Quiz Created",
+        description: "Quiz saved locally. Database connection failed.",
+        variant: "destructive",
+      });
+
+      navigate("/");
+    }
   };
 
-  const loadExistingQuiz = (config: QuizConfig) => {
+  const loadExistingQuiz = async (config: QuizConfig) => {
     localStorage.setItem("current-quiz-config", JSON.stringify(config));
+    
+    // Load teams from Supabase for this quiz
+    try {
+      const { data: teams, error } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('quiz_id', config.id);
+
+      if (!error && teams) {
+        // Store teams data for the loaded quiz
+        localStorage.setItem(`teams-${config.id}`, JSON.stringify(teams));
+      }
+    } catch (error) {
+      console.error('Error loading teams for quiz:', error);
+    }
+    
     navigate("/");
   };
 

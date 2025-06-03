@@ -43,15 +43,26 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
     
     switch (type) {
       case "fifty-fifty":
-        return (
-          <div className="text-sm text-center">
-            <span className="block">50</span>
-            <span className="block">50</span>
-          </div>
-        );
+        // Only show 50:50 icon for actual fifty-fifty lifeline
+        if (lifelineName.includes('50') || lifelineName === 'fifty-fifty') {
+          return (
+            <div className="text-sm text-center">
+              <span className="block">50</span>
+              <span className="block">50</span>
+            </div>
+          );
+        }
+        // For other lifelines mapped to fifty-fifty type, show appropriate icon
+        return "🎯";
       case "phone-friend":
+        if (lifelineName.includes('expert')) {
+          return "👨‍🎓";
+        }
         return "📞";
       case "ask-audience":
+        if (lifelineName.includes('poll')) {
+          return "📊";
+        }
         return "👥";
       default:
         return "";
@@ -66,16 +77,22 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
     
     switch (type) {
       case "fifty-fifty":
-        result = applyFiftyFifty(currentQuestion);
+        // Only apply fifty-fifty logic for actual 50:50 lifeline
+        if (lifelineName.includes('50') || lifelineName === 'fifty-fifty') {
+          result = applyFiftyFifty(currentQuestion);
+        } else {
+          // For Roll the Dice, just mark as used without any result
+          result = null;
+        }
         onUse(type, result);
         break;
       case "phone-friend":
-        // Check if it's ask the expert or phone a friend
+        // For ask the expert, just mark as used
         if (lifelineName.includes('expert')) {
-          // For ask the expert, don't show popup, just use the lifeline
-          result = phoneAFriend(currentQuestion);
+          result = null;
           onUse(type, result);
         } else {
+          // For actual phone a friend, show dialog
           result = phoneAFriend(currentQuestion);
           setFriendResponse(result);
           setDialogOpen(true);
@@ -83,12 +100,12 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
         }
         break;
       case "ask-audience":
-        // Check if it's audience poll
+        // For audience poll, just mark as used
         if (lifelineName.includes('poll')) {
-          // For audience poll, don't show popup, just use the lifeline
-          result = askTheAudience(currentQuestion);
+          result = null;
           onUse(type, result);
         } else {
+          // For actual ask the audience, show dialog
           result = askTheAudience(currentQuestion);
           setAudienceResults(result);
           setDialogOpen(true);
