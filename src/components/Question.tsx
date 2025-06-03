@@ -19,6 +19,7 @@ interface QuestionProps {
   onUseLifeline: any;
   questionIndex: number;
   timeLimit?: number;
+  quizLogo?: string;
 }
 
 const Question = ({
@@ -32,7 +33,8 @@ const Question = ({
   onOptionSelect,
   onTimeUp,
   timerPaused,
-  timeLimit = 30
+  timeLimit = 30,
+  quizLogo
 }: QuestionProps) => {
   const [timeLeft, setTimeLeft] = useState(timeLimit);
 
@@ -83,21 +85,25 @@ const Question = ({
   const letterMapping = ['A', 'B', 'C', 'D'];
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-8">
-      {/* Timer */}
-      <div className="flex justify-center">
-        <CircularTimer
-          timeLeft={timeLeft}
-          totalTime={timeLimit}
-          isPaused={timerPaused}
-        />
-      </div>
-      
-      {/* Question */}
-      <div className="bg-millionaire-secondary p-8 rounded-lg border border-millionaire-accent">
-        <h2 className="text-2xl font-bold text-center text-millionaire-gold mb-8">
-          {question.text}
-        </h2>
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="bg-millionaire-secondary p-8 rounded-lg border border-millionaire-accent space-y-8">
+        {/* Logo at the top */}
+        {quizLogo && (
+          <div className="flex justify-center">
+            <img 
+              src={quizLogo} 
+              alt="Quiz Logo" 
+              className="w-24 h-24 object-cover rounded"
+            />
+          </div>
+        )}
+        
+        {/* Question */}
+        <div>
+          <h2 className="text-2xl font-bold text-center text-millionaire-gold">
+            {question.text}
+          </h2>
+        </div>
         
         {/* Options */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -112,6 +118,15 @@ const Question = ({
               {option}
             </Button>
           ))}
+        </div>
+        
+        {/* Timer at the bottom */}
+        <div className="flex justify-center">
+          <CircularTimer
+            timeLeft={timeLeft}
+            totalTime={timeLimit}
+            isPaused={timerPaused}
+          />
         </div>
       </div>
     </div>

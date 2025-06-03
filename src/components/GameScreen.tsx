@@ -474,6 +474,7 @@ const GameScreen = ({
             onUseLifeline={handleUseLifeline}
             questionIndex={currentQuestionIndex}
             timeLimit={currentConfig.timeLimit}
+            quizLogo={quizConfig.logo}
           />
         </div>
       </div>
