@@ -1,49 +1,13 @@
 
 import { useEffect, useState } from "react";
-import { GameSettings, getQuestionConfig } from "@/utils/gameUtils";
 
 interface CircularTimerProps {
-  isActive: boolean;
-  onTimeUp: () => void;
-  settings: GameSettings;
-  isPaused?: boolean;
-  questionIndex: number;
+  timeLeft: number;
+  totalTime: number;
+  isPaused: boolean;
 }
 
-const CircularTimer = ({ isActive, onTimeUp, settings, isPaused = false, questionIndex }: CircularTimerProps) => {
-  const config = getQuestionConfig(questionIndex);
-  const [timeLeft, setTimeLeft] = useState(config.timeLimit);
-
-  useEffect(() => {
-    // Reset timer when question changes
-    if (isActive) {
-      const newConfig = getQuestionConfig(questionIndex);
-      setTimeLeft(newConfig.timeLimit);
-    }
-  }, [isActive, questionIndex]);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    
-    if (isActive && !isPaused && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          const newTime = prevTime - 1;
-          if (newTime <= 0) {
-            clearInterval(interval);
-            onTimeUp();
-          }
-          return newTime;
-        });
-      }, 1000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isActive, isPaused, timeLeft, onTimeUp]);
-
-  const totalTime = getQuestionConfig(questionIndex).timeLimit;
+const CircularTimer = ({ timeLeft, totalTime, isPaused }: CircularTimerProps) => {
   const progress = (timeLeft / totalTime) * 100;
   const circumference = 2 * Math.PI * 45; // radius = 45
   const strokeDashoffset = circumference - (progress / 100) * circumference;
