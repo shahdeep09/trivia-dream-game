@@ -1,10 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
-import { Question as QuestionType, playSound, GameSettings, getQuestionConfig } from "@/utils/gameUtils";
+
+import { useState, useEffect } from "react";
+import { Question as QuestionType, GameSettings } from "@/utils/gameUtils";
+import { Button } from "@/components/ui/button";
 import CircularTimer from "./CircularTimer";
-import Lifeline from "./Lifeline";
-import { useWindowSize } from "@/hooks/use-window-size";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { ScrollArea } from "./ui/scroll-area";
 
 interface QuestionProps {
   question: QuestionType;
@@ -14,16 +12,13 @@ interface QuestionProps {
   settings: GameSettings;
   selectedOption: number | null;
   showResult: boolean;
-  onOptionSelect: (optionIndex: number) => void; // Updated to accept optionIndex parameter
+  onOptionSelect: (optionIndex: number) => void;
   onTimeUp: () => void;
   timerPaused: boolean;
-  lifelinesUsed: {
-    "fifty-fifty": boolean;
-    "phone-friend": boolean;
-    "ask-audience": boolean;
-  };
-  onUseLifeline: (type: "fifty-fifty" | "phone-friend" | "ask-audience", result: any) => void;
+  lifelinesUsed: any;
+  onUseLifeline: any;
   questionIndex: number;
+  timeLimit?: number;
 }
 
 const Question = ({
@@ -37,141 +32,87 @@ const Question = ({
   onOptionSelect,
   onTimeUp,
   timerPaused,
-  lifelinesUsed,
-  onUseLifeline,
-  questionIndex,
+  timeLimit = 30
 }: QuestionProps) => {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [suspensePlayed, setSuspensePlayed] = useState(false);
-  const [spacebarTip, setSpacebarTip] = useState(false);
-  const windowSize = useWindowSize();
-  
-  useEffect(() => {
-    setSelectedIndex(selectedOption);
-    // Reset suspense played state when question changes
-    setSuspensePlayed(false);
-  }, [selectedOption, question]);
-
-  // Handle spacebar shortcut for confirming answer
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (event.code === 'Space' && selectedIndex !== null && !revealAnswer) {
-      event.preventDefault(); // Prevent page scrolling
-      onAnswer(selectedIndex);
-      setSpacebarTip(false);
-    }
-  }, [selectedIndex, onAnswer, revealAnswer]);
+  const [timeLeft, setTimeLeft] = useState(timeLimit);
 
   useEffect(() => {
-    // Add event listener for spacebar
-    window.addEventListener('keydown', handleKeyDown);
-    
-    // Clean up
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleKeyDown]);
+    setTimeLeft(timeLimit);
+  }, [question, timeLimit]);
 
   useEffect(() => {
-    // Show the spacebar tip when an option is selected
-    if (selectedIndex !== null && !revealAnswer) {
-      setSpacebarTip(true);
-    } else {
-      setSpacebarTip(false);
-    }
-  }, [selectedIndex, revealAnswer]);
+    if (timerPaused || revealAnswer) return;
 
-  const handleOptionClick = (index: number) => {
-    if (selectedIndex !== null || disabledOptions.includes(index) || revealAnswer) return;
-    
-    setSelectedIndex(index);
-    onOptionSelect(index); // Pass the option index to the parent component
-  };
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          onTimeUp();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timerPaused, revealAnswer, onTimeUp]);
 
   const getOptionClass = (index: number) => {
-    let className = "relative flex items-center w-full my-2 py-3 px-6 rounded-2xl border-2 border-yellow-400 overflow-hidden ";
+    let baseClass = "w-full p-4 text-left border-2 rounded-lg transition-all duration-300 text-white ";
     
     if (disabledOptions.includes(index)) {
-      className += " opacity-30";
+      return baseClass + "bg-gray-600 border-gray-500 opacity-50 cursor-not-allowed";
     }
     
-    // Make selected options yellow (before answer reveal)
-    if (selectedIndex === index && !showResult) {
-      className += " selected bg-yellow-500 text-millionaire-primary"; 
+    if (selectedOption === index) {
+      baseClass += "bg-millionaire-gold text-millionaire-primary border-millionaire-gold ";
+    } else {
+      baseClass += "bg-millionaire-secondary border-millionaire-accent hover:bg-millionaire-accent ";
     }
-    // Keep the previous styling for revealed answers
-    else if (showResult && revealAnswer) {
+    
+    if (revealAnswer && showResult) {
       if (index === question.correctOptionIndex) {
-        className += " correct bg-millionaire-correct border-millionaire-correct";
-      } else if (selectedIndex === index) {
-        className += " wrong bg-millionaire-wrong border-millionaire-wrong";
+        baseClass += "bg-green-600 border-green-400 text-white animate-pulse";
+      } else if (selectedOption === index && index !== question.correctOptionIndex) {
+        baseClass += "bg-red-600 border-red-400 text-white";
       }
     }
     
-    className += " hexagon-option"; // Add hexagon shape class
-    
-    return className;
+    return baseClass;
   };
 
-  const optionLabels = ["A", "B", "C", "D"];
+  const letterMapping = ['A', 'B', 'C', 'D'];
 
   return (
-    <div className="flex flex-col h-full">
-      {/* KBC Logo at the top - 1.5x bigger */}
-      <div className="flex justify-center mb-4">
-        <div className="w-30 h-30 relative">
-          <img 
-            src="/lovable-uploads/7a4ab7f7-1f17-4576-be09-22adf0ee4b13.png" 
-            alt="KBC Logo" 
-            className="w-full h-full object-contain kbc-logo"
-          />
-        </div>
+    <div className="w-full max-w-4xl mx-auto space-y-8">
+      {/* Timer */}
+      <div className="flex justify-center">
+        <CircularTimer
+          timeLeft={timeLeft}
+          totalTime={timeLimit}
+          isPaused={timerPaused}
+        />
       </div>
-
-      {/* Question Container */}
-      <div className="w-full max-w-4xl mx-auto">
-        {/* Question hexagon container */}
-        <div className="bg-millionaire-primary border-4 border-yellow-400 p-6 rounded-2xl mb-6 shadow-lg text-center relative hexagon-question">
-          <h2 className="text-3xl md:text-4xl text-white font-bold px-4 py-4">
-            {question.text}
-          </h2>
-        </div>
-
-        {/* Options in grid layout */}
+      
+      {/* Question */}
+      <div className="bg-millionaire-secondary p-8 rounded-lg border border-millionaire-accent">
+        <h2 className="text-2xl font-bold text-center text-millionaire-gold mb-8">
+          {question.text}
+        </h2>
+        
+        {/* Options */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {question.options.map((option, index) => (
-            <button
+            <Button
               key={index}
+              onClick={() => !revealAnswer && !disabledOptions.includes(index) && onOptionSelect(index)}
+              disabled={revealAnswer || disabledOptions.includes(index)}
               className={getOptionClass(index)}
-              disabled={disabledOptions.includes(index) || revealAnswer}
-              onClick={() => handleOptionClick(index)}
             >
-              <div className="flex items-center w-full">
-                <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-yellow-400 text-millionaire-primary font-bold mr-3">
-                  {optionLabels[index]}
-                </span>
-                <span className="flex-1 text-left text-xl text-white">{option}</span>
-              </div>
-            </button>
+              <span className="font-bold mr-3">{letterMapping[index]}:</span>
+              {option}
+            </Button>
           ))}
         </div>
-
-        {/* Timer positioned below questions */}
-        <div className="mt-6 mb-4">
-          <CircularTimer
-            isActive={!revealAnswer}
-            onTimeUp={onTimeUp}
-            settings={settings}
-            isPaused={timerPaused}
-            questionIndex={questionIndex}
-          />
-        </div>
-
-        {/* Spacebar tip message */}
-        {spacebarTip && (
-          <div className="mt-4 text-center animate-pulse">
-            <p className="text-millionaire-gold font-bold">Press SPACEBAR to confirm your final answer</p>
-          </div>
-        )}
       </div>
     </div>
   );

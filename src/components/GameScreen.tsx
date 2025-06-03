@@ -10,6 +10,7 @@ import Confetti from "react-confetti"; // We'll need to install this package
 import { useWindowSize } from "@/hooks/use-window-size"; // Custom hook for window size
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Lifeline from "./Lifeline";
+import { QuizConfig } from "@/pages/QuizSetup";
 
 interface GameScreenProps {
   questions: QuestionType[];
@@ -17,6 +18,7 @@ interface GameScreenProps {
   onGameEnd: (result: GameResult) => void;
   onBackToAdmin: () => void;
   teamId?: string | null;
+  quizConfig: QuizConfig;
 }
 
 export interface GameResult {
@@ -31,7 +33,8 @@ const GameScreen = ({
   settings = DEFAULT_GAME_SETTINGS,
   onGameEnd,
   onBackToAdmin,
-  teamId
+  teamId,
+  quizConfig
 }: GameScreenProps) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [gameQuestions, setGameQuestions] = useState<QuestionType[]>([]);
@@ -64,15 +67,15 @@ const GameScreen = ({
   // Action history for undo functionality
   const [actionHistory, setActionHistory] = useState<GameAction[]>([]);
 
-  // Prepare questions when game starts
+  // Prepare questions when game starts - now using quiz config
   useEffect(() => {
-    if (questions.length > 0) {
+    if (questions.length > 0 && quizConfig) {
       // Sort questions by value/difficulty
       const sortedQuestions = [...questions].sort((a, b) => a.value - b.value);
       
-      // Update questions with new point values based on position
-      const preparedQuestions = sortedQuestions.slice(0, 15).map((q, index) => {
-        const config = getQuestionConfig(index);
+      // Update questions with configured point values and time limits
+      const preparedQuestions = sortedQuestions.slice(0, quizConfig.numberOfQuestions).map((q, index) => {
+        const config = quizConfig.questionConfig[index] || { points: 100, timeLimit: 30 };
         return {
           ...shuffleOptions(q),
           value: config.points
@@ -82,7 +85,7 @@ const GameScreen = ({
       setGameQuestions(preparedQuestions);
       playSound("lets-play", settings);
     }
-  }, [questions, settings]);
+  }, [questions, settings, quizConfig]);
 
   const currentQuestion = gameQuestions[currentQuestionIndex];
   
@@ -328,7 +331,7 @@ const GameScreen = ({
   };
 
   const teamName = getCurrentTeamName();
-  const currentConfig = getQuestionConfig(currentQuestionIndex);
+  const currentConfig = quizConfig.questionConfig[currentQuestionIndex] || { points: 100, timeLimit: 30 };
 
   if (!currentQuestion) {
     return (
@@ -350,6 +353,20 @@ const GameScreen = ({
           numberOfPieces={500}
         />
       )}
+      
+      {/* Header with Samaj name and logo */}
+      <div className="bg-millionaire-primary border-b border-millionaire-accent p-4">
+        <div className="flex items-center justify-center">
+          {quizConfig.logo && (
+            <img 
+              src={quizConfig.logo} 
+              alt="Quiz Logo" 
+              className="w-12 h-12 object-cover rounded mr-4"
+            />
+          )}
+          <h1 className="text-3xl font-bold text-millionaire-gold">{quizConfig.samajName}</h1>
+        </div>
+      </div>
       
       {/* Control bar */}
       <div className="flex justify-between items-center p-4 bg-millionaire-primary border-b border-millionaire-accent">
@@ -434,7 +451,7 @@ const GameScreen = ({
         <div className="md:w-1/4 bg-millionaire-primary border-r border-millionaire-accent overflow-hidden">
           <ScrollArea className="h-[calc(100vh-64px)]">
             <div className="p-4">
-              <MoneyLadder currentLevel={currentQuestionIndex} />
+              <MoneyLadder currentLevel={currentQuestionIndex} quizConfig={quizConfig} />
             </div>
           </ScrollArea>
         </div>
@@ -455,6 +472,7 @@ const GameScreen = ({
             lifelinesUsed={lifelinesUsed}
             onUseLifeline={handleUseLifeline}
             questionIndex={currentQuestionIndex}
+            timeLimit={currentConfig.timeLimit}
           />
         </div>
       </div>

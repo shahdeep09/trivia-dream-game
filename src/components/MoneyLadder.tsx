@@ -1,27 +1,25 @@
 
-import { getQuestionConfig } from "@/utils/gameUtils";
+import { QuizConfig } from "@/pages/QuizSetup";
 
 interface MoneyLadderProps {
   currentLevel: number;
+  quizConfig: QuizConfig;
 }
 
-const MoneyLadder = ({ currentLevel }: MoneyLadderProps) => {
-  // Create 15 levels with the new point structure
-  const levels = Array.from({ length: 15 }, (_, index) => {
-    const config = getQuestionConfig(index);
-    return {
-      level: index + 1,
-      points: config.points,
-      timeLimit: config.timeLimit
-    };
-  });
+const MoneyLadder = ({ currentLevel, quizConfig }: MoneyLadderProps) => {
+  // Create levels based on quiz configuration
+  const levels = quizConfig.questionConfig.map((config, index) => ({
+    level: index + 1,
+    points: config.points,
+    timeLimit: config.timeLimit
+  }));
   
   // Reverse to display in descending order
   const reversedLevels = [...levels].reverse();
   
   // Get the class name for a level
   const getLevelClass = (index: number) => {
-    const levelIndex = 14 - index; // Convert back to original index
+    const levelIndex = levels.length - 1 - index; // Convert back to original index
     let className = "p-1 text-center rounded-md flex justify-between items-center text-xs";
     
     if (levelIndex === currentLevel) {

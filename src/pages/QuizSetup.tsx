@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,7 @@ export interface QuizConfig {
 
 const QuizSetup = () => {
   const navigate = useNavigate();
-  const [logo, setLogo] = useState<string>("");
+  const [logo, setLogo] = useState<string>("/lovable-uploads/3fbaaab1-2736-4784-ab61-7ef3f1ab4cde.png");
   const [numberOfQuestions, setNumberOfQuestions] = useState<number>(15);
   const [showQuestionConfig, setShowQuestionConfig] = useState(false);
   const [questionConfig, setQuestionConfig] = useState<Array<{
@@ -51,7 +50,6 @@ const QuizSetup = () => {
   ];
 
   useEffect(() => {
-    // Load quiz history from localStorage
     const savedHistory = localStorage.getItem("quiz-history");
     if (savedHistory) {
       setQuizHistory(JSON.parse(savedHistory));
@@ -59,7 +57,6 @@ const QuizSetup = () => {
   }, []);
 
   useEffect(() => {
-    // Initialize question config when number of questions changes
     if (numberOfQuestions > 0) {
       const config = Array.from({ length: numberOfQuestions }, (_, index) => ({
         questionNumber: index + 1,
@@ -71,7 +68,6 @@ const QuizSetup = () => {
   }, [numberOfQuestions]);
 
   useEffect(() => {
-    // Initialize team names when number of teams changes
     if (numberOfTeams > 0) {
       const names = Array.from({ length: numberOfTeams }, (_, index) => `Team ${index + 1}`);
       setTeamNames(names);
@@ -81,7 +77,7 @@ const QuizSetup = () => {
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         toast({
           title: "File too large",
           description: "Please upload an image smaller than 5MB",
@@ -169,7 +165,6 @@ const QuizSetup = () => {
       createdAt: new Date().toISOString()
     };
 
-    // Save to localStorage
     const updatedHistory = [...quizHistory, quizConfig];
     setQuizHistory(updatedHistory);
     localStorage.setItem("quiz-history", JSON.stringify(updatedHistory));
@@ -180,7 +175,6 @@ const QuizSetup = () => {
       description: "Your quiz has been configured and saved",
     });
 
-    // Navigate to home with the new configuration
     navigate("/");
   };
 
@@ -208,14 +202,12 @@ const QuizSetup = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Quiz Setup Form */}
           <div className="lg:col-span-2">
             <Card className="bg-millionaire-secondary border-millionaire-accent">
               <CardHeader>
                 <CardTitle className="text-millionaire-gold">Create New Quiz</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Logo Upload */}
                 <div className="space-y-2">
                   <Label>Upload Logo</Label>
                   <div className="flex items-center space-x-4">
@@ -234,7 +226,6 @@ const QuizSetup = () => {
                   <p className="text-sm text-millionaire-light">300px x 300px recommended. Default logo will be used if not uploaded.</p>
                 </div>
 
-                {/* Number of Questions */}
                 <div className="space-y-2">
                   <Label>Number of Questions in the Quiz</Label>
                   <Input
@@ -247,7 +238,6 @@ const QuizSetup = () => {
                   />
                 </div>
 
-                {/* Lifelines Selection */}
                 <div className="space-y-4">
                   <Label>Select Lifelines</Label>
                   <div className="grid grid-cols-2 gap-4">
@@ -267,7 +257,6 @@ const QuizSetup = () => {
                   </p>
                 </div>
 
-                {/* Number of Teams */}
                 <div className="space-y-2">
                   <Label>Number of Players/Teams</Label>
                   <Input
@@ -280,7 +269,6 @@ const QuizSetup = () => {
                   />
                 </div>
 
-                {/* Samaj Name */}
                 <div className="space-y-2">
                   <Label>Enter Samaj/Sangh Name</Label>
                   <Input
@@ -301,7 +289,6 @@ const QuizSetup = () => {
             </Card>
           </div>
 
-          {/* Quiz History */}
           <div>
             <Card className="bg-millionaire-secondary border-millionaire-accent">
               <CardHeader>
@@ -334,7 +321,6 @@ const QuizSetup = () => {
           </div>
         </div>
 
-        {/* Question Configuration Dialog */}
         <Dialog open={showQuestionConfig} onOpenChange={setShowQuestionConfig}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-millionaire-primary border-millionaire-accent">
             <DialogHeader>
@@ -370,7 +356,6 @@ const QuizSetup = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Team Names Dialog */}
         <Dialog open={showTeamNames} onOpenChange={setShowTeamNames}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-millionaire-primary border-millionaire-accent">
             <DialogHeader>
