@@ -3,56 +3,43 @@ import { useState } from "react";
 import { GameSettings, Question, applyFiftyFifty, phoneAFriend, askTheAudience } from "@/utils/gameUtils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from "lucide-react";
+import { QuizConfig } from "@/types/quiz";
 
 interface LifelineProps {
-  type: "fifty-fifty" | "phone-friend" | "ask-audience";
+  lifelineId: string;
   isUsed: boolean;
-  onUse: (type: "fifty-fifty" | "phone-friend" | "ask-audience", result: any) => void;
+  onUse: (lifelineId: string, result: any) => void;
   currentQuestion: Question;
   settings: GameSettings;
+  quizConfig: QuizConfig;
 }
 
-const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelineProps) => {
+const Lifeline = ({ lifelineId, isUsed, onUse, currentQuestion, settings, quizConfig }: LifelineProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [audienceResults, setAudienceResults] = useState<number[]>([]);
   const [friendResponse, setFriendResponse] = useState("");
 
   const getLifelineName = () => {
-    switch (type) {
+    switch (lifelineId) {
       case "fifty-fifty":
-        return settings.lifelineNames.lifeline1;
+        return "50:50";
       case "phone-friend":
-        return settings.lifelineNames.lifeline2;
+        return "Phone a Friend";
       case "ask-audience":
-        return settings.lifelineNames.lifeline3;
+        return "Ask the Audience";
+      case "ask-expert":
+        return "Ask the Expert";
+      case "audience-poll":
+        return "Audience Poll";
+      case "roll-dice":
+        return "Roll the Dice";
       default:
-        return "";
+        return lifelineId;
     }
   };
 
   const getLifelineIcon = () => {
-    const lifelineName = getLifelineName().toLowerCase();
-    
-    // Check for Roll the Dice lifeline
-    if (lifelineName.includes('dice') || lifelineName.includes('roll')) {
-      const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
-      const randomDice = diceIcons[Math.floor(Math.random() * diceIcons.length)];
-      const DiceIcon = randomDice;
-      return <DiceIcon size={20} />;
-    }
-    
-    // Check for Ask the Expert
-    if (lifelineName.includes('expert')) {
-      return "👨‍🎓";
-    }
-    
-    // Check for Audience Poll
-    if (lifelineName.includes('poll')) {
-      return "📊";
-    }
-    
-    // Default icons for standard lifelines
-    switch (type) {
+    switch (lifelineId) {
       case "fifty-fifty":
         return (
           <div className="text-sm text-center">
@@ -64,8 +51,17 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
         return "📞";
       case "ask-audience":
         return "👥";
+      case "ask-expert":
+        return "👨‍🎓";
+      case "audience-poll":
+        return "📊";
+      case "roll-dice":
+        const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
+        const randomDice = diceIcons[Math.floor(Math.random() * diceIcons.length)];
+        const DiceIcon = randomDice;
+        return <DiceIcon size={20} />;
       default:
-        return "";
+        return "❓";
     }
   };
 
@@ -73,57 +69,48 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
     if (isUsed) return;
 
     let result;
-    const lifelineName = getLifelineName().toLowerCase();
     
-    switch (type) {
+    switch (lifelineId) {
       case "fifty-fifty":
-        if (lifelineName.includes('dice') || lifelineName.includes('roll')) {
-          // Roll the Dice - just mark as used, no special effect
-          result = null;
-          onUse(type, result);
-        } else {
-          // Standard 50:50 - remove two wrong answers
-          result = applyFiftyFifty(currentQuestion);
-          onUse(type, result);
-        }
+        // Standard 50:50 - remove two wrong answers
+        result = applyFiftyFifty(currentQuestion);
+        onUse(lifelineId, result);
         break;
+        
       case "phone-friend":
-        if (lifelineName.includes('expert')) {
-          // Ask the Expert - just mark as used, no dialog
-          result = null;
-          onUse(type, result);
-        } else {
-          // Standard Phone a Friend - show dialog
-          result = phoneAFriend(currentQuestion);
-          setFriendResponse(result);
-          setDialogOpen(true);
-          onUse(type, result);
-        }
+        // Standard Phone a Friend - show dialog
+        result = phoneAFriend(currentQuestion);
+        setFriendResponse(result);
+        setDialogOpen(true);
+        onUse(lifelineId, result);
         break;
+        
       case "ask-audience":
-        if (lifelineName.includes('poll')) {
-          // Audience Poll - just mark as used, no dialog
-          result = null;
-          onUse(type, result);
-        } else {
-          // Standard Ask the Audience - show dialog
-          result = askTheAudience(currentQuestion);
-          setAudienceResults(result);
-          setDialogOpen(true);
-          onUse(type, result);
-        }
+        // Standard Ask the Audience - show dialog
+        result = askTheAudience(currentQuestion);
+        setAudienceResults(result);
+        setDialogOpen(true);
+        onUse(lifelineId, result);
+        break;
+        
+      case "ask-expert":
+      case "audience-poll":
+      case "roll-dice":
+        // Custom lifelines - just mark as used, no popup
+        result = null;
+        onUse(lifelineId, result);
+        break;
+        
+      default:
+        result = null;
+        onUse(lifelineId, result);
         break;
     }
   };
 
   const renderLifelineDialog = () => {
-    const lifelineName = getLifelineName().toLowerCase();
-    
-    switch (type) {
+    switch (lifelineId) {
       case "phone-friend":
-        if (lifelineName.includes('expert')) {
-          return null; // No dialog for Ask the Expert
-        }
         return (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogContent className="bg-millionaire-primary border-millionaire-accent">
@@ -138,10 +125,8 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
             </DialogContent>
           </Dialog>
         );
+        
       case "ask-audience":
-        if (lifelineName.includes('poll')) {
-          return null; // No dialog for Audience Poll
-        }
         return (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogContent className="bg-millionaire-primary border-millionaire-accent">
@@ -170,6 +155,7 @@ const Lifeline = ({ type, isUsed, onUse, currentQuestion, settings }: LifelinePr
             </DialogContent>
           </Dialog>
         );
+        
       default:
         return null;
     }

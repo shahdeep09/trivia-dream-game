@@ -22,7 +22,7 @@ const Home = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  // Load teams data from Supabase for current quiz
+  // Load teams data from Supabase for current quiz ONLY
   const loadTeamsData = async () => {
     console.log('Loading teams data from Supabase...');
     
@@ -37,33 +37,18 @@ const Home = () => {
     const config: QuizConfig = JSON.parse(savedConfig);
     setCurrentQuizConfig(config);
 
-    // Try to load from localStorage first for immediate UI update
-    const savedTeams = localStorage.getItem("millionaire-teams");
-    if (savedTeams) {
-      const teams: Team[] = JSON.parse(savedTeams);
-      // Filter teams that belong to current quiz
-      const currentQuizTeams = teams.filter(team => 
-        config.teamNames.includes(team.name)
-      );
-      if (currentQuizTeams.length > 0) {
-        setTeams(currentQuizTeams);
-      }
-    }
-
     try {
-      // Load teams from Supabase for this specific quiz
+      // Load teams from Supabase for this specific quiz ONLY
       const { data: teamsData, error } = await supabase
         .from('teams')
         .select('*')
-        .eq('quiz_id', config.id)
+        .eq('quiz_id', config.id) // Only load teams for current quiz
         .order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error loading teams from Supabase:', error);
-        // Fallback to creating teams from config if not exists in localStorage
-        if (!savedTeams) {
-          createTeamsFromConfig(config);
-        }
+        // Fallback to creating teams from config if not exists
+        createTeamsFromConfig(config);
       } else if (teamsData && teamsData.length > 0) {
         // Convert Supabase data to Team format
         const formattedTeams: Team[] = teamsData.map(team => ({
@@ -75,28 +60,25 @@ const Home = () => {
           totalLifelinesUsed: team.total_lifelines_used || 0
         }));
         
-        console.log('Loaded teams from Supabase:', formattedTeams);
+        console.log('Loaded teams from Supabase for quiz:', config.id, formattedTeams);
         setTeams(formattedTeams);
         
-        // Also save to localStorage as backup
+        // Also save to localStorage as backup with quiz isolation
+        localStorage.setItem(`teams-${config.id}`, JSON.stringify(formattedTeams));
         localStorage.setItem("millionaire-teams", JSON.stringify(formattedTeams));
       } else {
-        // No teams found, create them only if not exists in localStorage
-        if (!savedTeams) {
-          createTeamsFromConfig(config);
-        }
+        // No teams found, create them
+        createTeamsFromConfig(config);
       }
     } catch (error) {
       console.error('Error loading teams:', error);
-      // Only create from config if no localStorage data
-      if (!savedTeams) {
-        createTeamsFromConfig(config);
-      }
+      // Fallback to creating from config
+      createTeamsFromConfig(config);
     }
   };
 
   const createTeamsFromConfig = async (config: QuizConfig) => {
-    console.log('Creating teams from config...');
+    console.log('Creating teams from config for quiz:', config.id);
     
     const configuredTeams: Team[] = config.teamNames.map((name, index) => ({
       id: crypto.randomUUID(),
@@ -108,7 +90,7 @@ const Home = () => {
     }));
     
     try {
-      // Save teams to Supabase
+      // Save teams to Supabase with quiz_id
       const teamsData = configuredTeams.map(team => ({
         id: team.id,
         quiz_id: config.id,
@@ -126,13 +108,14 @@ const Home = () => {
       if (error) {
         console.error('Error saving teams to Supabase:', error);
       } else {
-        console.log('Teams saved to Supabase successfully');
+        console.log('Teams saved to Supabase successfully for quiz:', config.id);
       }
     } catch (error) {
       console.error('Error creating teams in Supabase:', error);
     }
     
     setTeams(configuredTeams);
+    localStorage.setItem(`teams-${config.id}`, JSON.stringify(configuredTeams));
     localStorage.setItem("millionaire-teams", JSON.stringify(configuredTeams));
   };
 
@@ -141,18 +124,23 @@ const Home = () => {
     loadTeamsData();
   }, [refreshKey]);
 
-  // Enhanced team data refresh with multiple event listeners
+  // Enhanced team data refresh with quiz isolation
   useEffect(() => {
     const handleTeamUpdate = (event?: CustomEvent) => {
-      console.log('Team data update event received:', event?.detail);
-      setTimeout(() => {
-        loadTeamsData();
-        forceRefresh();
-      }, 100);
+      const detail = event?.detail;
+      console.log('Team data update event received:', detail);
+      
+      // Only refresh if the update is for the current quiz
+      if (detail?.quizId && currentQuizConfig?.id && detail.quizId === currentQuizConfig.id) {
+        setTimeout(() => {
+          loadTeamsData();
+          forceRefresh();
+        }, 100);
+      }
     };
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'millionaire-teams') {
+      if (e.key === 'millionaire-teams' || (currentQuizConfig && e.key === `teams-${currentQuizConfig.id}`)) {
         console.log('Storage change detected for teams:', e.newValue);
         setTimeout(() => {
           loadTeamsData();
@@ -193,7 +181,7 @@ const Home = () => {
       window.removeEventListener('focus', handleFocus);
       clearInterval(intervalId);
     };
-  }, []);
+  }, [currentQuizConfig]);
   
   // Handle bonus points change
   const handleBonusPointsChange = (teamId: string, value: string) => {
@@ -217,7 +205,7 @@ const Home = () => {
     if (!team || !currentQuizConfig) return;
 
     try {
-      // Update in Supabase
+      // Update in Supabase for current quiz only
       const { error } = await supabase
         .from('teams')
         .update({ 
@@ -226,18 +214,20 @@ const Home = () => {
           games_played: team.gamesPlayed,
           total_lifelines_used: team.totalLifelinesUsed
         })
-        .eq('id', teamId);
+        .eq('id', teamId)
+        .eq('quiz_id', currentQuizConfig.id); // Ensure we only update teams for this quiz
 
       if (error) {
         console.error('Error updating team in Supabase:', error);
       } else {
-        console.log('Team updated in Supabase successfully');
+        console.log('Team updated in Supabase successfully for quiz:', currentQuizConfig.id);
       }
     } catch (error) {
       console.error('Error saving team data:', error);
     }
     
-    // Save the updated teams to localStorage
+    // Save the updated teams to localStorage with quiz isolation
+    localStorage.setItem(`teams-${currentQuizConfig.id}`, JSON.stringify(teams));
     localStorage.setItem("millionaire-teams", JSON.stringify(teams));
     
     toast({
@@ -299,7 +289,7 @@ const Home = () => {
           <div>
             <h1 className="text-4xl font-bold text-millionaire-gold">{currentQuizConfig.samajName}</h1>
             <p className="text-millionaire-light mt-2">
-              Quiz Competition - {currentQuizConfig.numberOfQuestions} Questions
+              Quiz Competition - {currentQuizConfig.numberOfQuestions} Questions - Quiz ID: {currentQuizConfig.id?.slice(0, 8)}
             </p>
           </div>
           <div className="flex items-center space-x-4">

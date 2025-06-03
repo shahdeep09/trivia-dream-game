@@ -57,17 +57,24 @@ const GameScreen = ({
   const navigate = useNavigate();
   const windowSize = useWindowSize();
   
-  // Lifelines
-  const [lifelinesUsed, setLifelinesUsed] = useState({
-    "fifty-fifty": false,
-    "phone-friend": false,
-    "ask-audience": false,
-  });
+  // Lifelines - map to generic types but track by quiz config
+  const [lifelinesUsed, setLifelinesUsed] = useState<Record<string, boolean>>({});
   const [disabledOptions, setDisabledOptions] = useState<number[]>([]);
   const [totalLifelinesUsedInGame, setTotalLifelinesUsedInGame] = useState(0);
   
   // Action history for undo functionality
   const [actionHistory, setActionHistory] = useState<GameAction[]>([]);
+
+  // Initialize lifelines based on quiz config
+  useEffect(() => {
+    if (quizConfig?.selectedLifelines) {
+      const initialLifelines: Record<string, boolean> = {};
+      quizConfig.selectedLifelines.forEach(lifeline => {
+        initialLifelines[lifeline] = false;
+      });
+      setLifelinesUsed(initialLifelines);
+    }
+  }, [quizConfig]);
 
   // Prepare questions when game starts
   useEffect(() => {
@@ -201,18 +208,19 @@ const GameScreen = ({
     setActionHistory([...actionHistory, timeoutAction]);
   };
 
-  const handleUseLifeline = (type: "fifty-fifty" | "phone-friend" | "ask-audience", result: any) => {
-    setLifelinesUsed({ ...lifelinesUsed, [type]: true });
+  const handleUseLifeline = (lifelineId: string, result: any) => {
+    setLifelinesUsed({ ...lifelinesUsed, [lifelineId]: true });
     setTotalLifelinesUsedInGame(totalLifelinesUsedInGame + 1);
     playSound("lifeline", settings);
     
-    if (type === "fifty-fifty") {
+    // Only apply fifty-fifty effect for actual fifty-fifty lifeline
+    if (lifelineId === "fifty-fifty" && result) {
       setDisabledOptions(result);
     }
     
     const lifelineAction: GameAction = {
       type: 'LIFELINE',
-      data: { type, result }
+      data: { type: lifelineId, result }
     };
     setActionHistory([...actionHistory, lifelineAction]);
   };
@@ -228,8 +236,8 @@ const GameScreen = ({
         totalLifelinesUsed: (teamToUpdate.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
       };
 
-      // Update in Supabase first
-      if (quizConfig?.id) {
+      // Update in Supabase first - only for current quiz
+      if (quizConfig?.id && teamId) {
         const { error } = await supabase
           .from('teams')
           .update({
@@ -237,7 +245,8 @@ const GameScreen = ({
             games_played: updatedTeam.gamesPlayed,
             total_lifelines_used: updatedTeam.totalLifelinesUsed
           })
-          .eq('id', teamId);
+          .eq('id', teamId)
+          .eq('quiz_id', quizConfig.id); // Ensure we only update teams for this quiz
 
         if (error) {
           console.error('Error updating team in Supabase:', error);
@@ -246,7 +255,7 @@ const GameScreen = ({
         }
       }
 
-      // Update localStorage as backup
+      // Update localStorage as backup - filter by current quiz
       const savedTeams = localStorage.getItem("millionaire-teams");
       if (savedTeams) {
         const teams: Team[] = JSON.parse(savedTeams);
@@ -263,6 +272,7 @@ const GameScreen = ({
               pointsAdded: pointsToAdd, 
               gamesPlayed: 1, 
               lifelinesUsed: totalLifelinesUsedInGame,
+              quizId: quizConfig.id,
               timestamp: Date.now()
             } 
           });
@@ -389,90 +399,20 @@ const GameScreen = ({
     );
   }
 
-  const getLifelineComponents = () => {
-    if (!quizConfig.selectedLifelines) return [];
+  const renderLifelines = () => {
+    if (!quizConfig.selectedLifelines) return null;
     
-    const components = [];
-    
-    // Only show each lifeline once, mapped correctly
-    quizConfig.selectedLifelines.forEach((lifeline) => {
-      switch (lifeline) {
-        case 'fifty-fifty':
-          components.push(
-            <Lifeline
-              key="fifty-fifty"
-              type="fifty-fifty"
-              isUsed={lifelinesUsed["fifty-fifty"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          );
-          break;
-        case 'phone-friend':
-          components.push(
-            <Lifeline
-              key="phone-friend"
-              type="phone-friend"
-              isUsed={lifelinesUsed["phone-friend"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          );
-          break;
-        case 'ask-audience':
-          components.push(
-            <Lifeline
-              key="ask-audience"
-              type="ask-audience"
-              isUsed={lifelinesUsed["ask-audience"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          );
-          break;
-        case 'ask-expert':
-          components.push(
-            <Lifeline
-              key="ask-expert"
-              type="phone-friend"
-              isUsed={lifelinesUsed["phone-friend"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          );
-          break;
-        case 'audience-poll':
-          components.push(
-            <Lifeline
-              key="audience-poll"
-              type="ask-audience"
-              isUsed={lifelinesUsed["ask-audience"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          );
-          break;
-        case 'roll-dice':
-          components.push(
-            <Lifeline
-              key="roll-dice"
-              type="fifty-fifty"
-              isUsed={lifelinesUsed["fifty-fifty"]}
-              onUse={handleUseLifeline}
-              currentQuestion={currentQuestion}
-              settings={settings}
-            />
-          );
-          break;
-      }
-    });
-    
-    return components;
+    return quizConfig.selectedLifelines.map((lifelineId, index) => (
+      <Lifeline
+        key={`${lifelineId}-${index}`}
+        lifelineId={lifelineId}
+        isUsed={lifelinesUsed[lifelineId] || false}
+        onUse={handleUseLifeline}
+        currentQuestion={currentQuestion}
+        settings={settings}
+        quizConfig={quizConfig}
+      />
+    ));
   };
 
   return (
@@ -515,9 +455,9 @@ const GameScreen = ({
           </div>
         </div>
 
-        {/* Fixed Lifelines in the center - no duplicates */}
+        {/* Lifelines */}
         <div className="flex justify-center gap-6">
-          {getLifelineComponents()}
+          {renderLifelines()}
         </div>
         
         <div className="flex gap-2">
