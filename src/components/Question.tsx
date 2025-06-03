@@ -62,20 +62,20 @@ const Question = ({
     let baseClass = "relative w-full px-8 py-4 text-left text-white font-medium text-lg transition-all duration-300 ";
     
     if (disabledOptions.includes(index)) {
-      return baseClass + "opacity-50 cursor-not-allowed bg-gray-600";
+      return baseClass + "opacity-50 cursor-not-allowed bg-gray-600 border-2 border-yellow-400";
     }
     
     if (selectedOption === index) {
-      baseClass += "bg-orange-500 border-orange-300 shadow-lg ";
+      baseClass += "bg-orange-500 border-2 border-yellow-400 shadow-lg ";
     } else {
-      baseClass += "bg-blue-800 hover:bg-blue-700 border-blue-400 ";
+      baseClass += "bg-blue-800 hover:bg-blue-700 border-2 border-yellow-400 ";
     }
     
     if (revealAnswer && showResult) {
       if (index === question.correctOptionIndex) {
-        baseClass += "bg-green-600 border-green-400 animate-pulse";
+        baseClass += "bg-green-600 border-2 border-green-400 animate-pulse";
       } else if (selectedOption === index && index !== question.correctOptionIndex) {
-        baseClass += "bg-red-600 border-red-400";
+        baseClass += "bg-red-600 border-2 border-red-400";
       }
     }
     
@@ -86,8 +86,8 @@ const Question = ({
 
   return (
     <div className="w-full max-w-6xl mx-auto">
-      {/* Main content container with classic millionaire styling */}
-      <div className="relative min-h-[600px] bg-gradient-to-b from-blue-900 via-blue-800 to-purple-900 p-8 rounded-lg border-2 border-yellow-400 shadow-2xl">
+      {/* Main content container */}
+      <div className="relative min-h-[600px] p-8">
         
         {/* Logo at the top */}
         {quizLogo && (
@@ -104,7 +104,7 @@ const Question = ({
         
         {/* Question */}
         <div className="mb-12">
-          <div className="bg-gradient-to-r from-blue-800 to-blue-700 p-6 rounded-lg border-2 border-yellow-400 shadow-lg">
+          <div className="p-6 rounded-lg border-2 border-yellow-400 shadow-lg bg-transparent">
             <h2 className="text-2xl font-bold text-center text-white leading-relaxed">
               {question.text}
             </h2>
@@ -120,7 +120,7 @@ const Question = ({
                 onClick={() => !revealAnswer && !disabledOptions.includes(index) && onOptionSelect(index)}
                 disabled={revealAnswer || disabledOptions.includes(index)}
                 className={`${getOptionClass(index)} 
-                  clipPath-hexagon border-2 min-h-[60px] flex items-center justify-start
+                  clipPath-hexagon min-h-[60px] flex items-center justify-start
                   shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]`}
                 style={{
                   clipPath: 'polygon(20px 0%, calc(100% - 20px) 0%, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0% 50%)'
@@ -139,13 +139,11 @@ const Question = ({
         
         {/* Timer at the bottom */}
         <div className="flex justify-center">
-          <div className="bg-gradient-to-r from-purple-800 to-blue-800 p-4 rounded-full border-2 border-yellow-400 shadow-lg">
-            <CircularTimer
-              timeLeft={timeLeft}
-              totalTime={timeLimit}
-              isPaused={timerPaused}
-            />
-          </div>
+          <CircularTimer
+            timeLeft={timeLeft}
+            totalTime={timeLimit}
+            isPaused={timerPaused}
+          />
         </div>
       </div>
     </div>
