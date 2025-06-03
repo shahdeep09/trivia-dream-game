@@ -2,21 +2,29 @@
 import { useState, useEffect } from "react";
 import { QuizConfig } from "@/types/quiz";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useQuizHistory = () => {
   const [quizHistory, setQuizHistory] = useState<QuizConfig[]>([]);
+  const { user } = useAuth();
 
   const loadQuizHistory = async () => {
+    if (!user) {
+      setQuizHistory([]);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('quizzes')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error loading quiz history:', error);
         // Fallback to localStorage if Supabase fails
-        const savedHistory = localStorage.getItem("quiz-history");
+        const savedHistory = localStorage.getItem(`quiz-history-${user.id}`);
         if (savedHistory) {
           setQuizHistory(JSON.parse(savedHistory));
         }
@@ -38,7 +46,7 @@ export const useQuizHistory = () => {
     } catch (error) {
       console.error('Error loading quiz history:', error);
       // Fallback to localStorage
-      const savedHistory = localStorage.getItem("quiz-history");
+      const savedHistory = localStorage.getItem(`quiz-history-${user.id}`);
       if (savedHistory) {
         setQuizHistory(JSON.parse(savedHistory));
       }
@@ -46,13 +54,19 @@ export const useQuizHistory = () => {
   };
 
   useEffect(() => {
-    loadQuizHistory();
-  }, []);
+    if (user) {
+      loadQuizHistory();
+    } else {
+      setQuizHistory([]);
+    }
+  }, [user]);
 
   const updateQuizHistory = (newQuiz: QuizConfig) => {
+    if (!user) return;
+    
     const updatedHistory = [newQuiz, ...quizHistory];
     setQuizHistory(updatedHistory);
-    localStorage.setItem("quiz-history", JSON.stringify(updatedHistory));
+    localStorage.setItem(`quiz-history-${user.id}`, JSON.stringify(updatedHistory));
   };
 
   return {

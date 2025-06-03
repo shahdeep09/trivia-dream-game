@@ -61,6 +61,7 @@ export type Database = {
           samaj_name: string
           selected_lifelines: string[]
           team_names: string[]
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -72,6 +73,7 @@ export type Database = {
           samaj_name: string
           selected_lifelines: string[]
           team_names: string[]
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -83,6 +85,7 @@ export type Database = {
           samaj_name?: string
           selected_lifelines?: string[]
           team_names?: string[]
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -97,6 +100,7 @@ export type Database = {
           quiz_id: string | null
           total_lifelines_used: number | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           bonus_points?: number | null
@@ -108,6 +112,7 @@ export type Database = {
           quiz_id?: string | null
           total_lifelines_used?: number | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           bonus_points?: number | null
@@ -119,6 +124,7 @@ export type Database = {
           quiz_id?: string | null
           total_lifelines_used?: number | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {

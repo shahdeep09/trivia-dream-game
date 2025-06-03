@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { QuizConfig } from "@/types/quiz";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useQuizSubmission = (updateQuizHistory: (quiz: QuizConfig) => void) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleSubmit = async (
     samajName: string,
@@ -16,6 +18,15 @@ export const useQuizSubmission = (updateQuizHistory: (quiz: QuizConfig) => void)
     numberOfTeams: number,
     teamNames: string[]
   ) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to create a quiz",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!samajName.trim()) {
       toast({
         title: "Missing Information",
@@ -53,6 +64,7 @@ export const useQuizSubmission = (updateQuizHistory: (quiz: QuizConfig) => void)
         .from('quizzes')
         .insert({
           id: quizId,
+          user_id: user.id,
           samaj_name: samajName,
           logo,
           number_of_questions: numberOfQuestions,
@@ -70,6 +82,7 @@ export const useQuizSubmission = (updateQuizHistory: (quiz: QuizConfig) => void)
       // Create teams in Supabase
       const teamsData = teamNames.map(name => ({
         quiz_id: quizId,
+        user_id: user.id,
         name
       }));
 
@@ -117,6 +130,15 @@ export const useQuizSubmission = (updateQuizHistory: (quiz: QuizConfig) => void)
   };
 
   const loadExistingQuiz = async (config: QuizConfig) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to load a quiz",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Clear previous quiz data
     localStorage.removeItem("millionaire-teams");
     localStorage.removeItem("current-quiz-config");
@@ -128,7 +150,8 @@ export const useQuizSubmission = (updateQuizHistory: (quiz: QuizConfig) => void)
       const { data: teams, error } = await supabase
         .from('teams')
         .select('*')
-        .eq('quiz_id', config.id);
+        .eq('quiz_id', config.id)
+        .eq('user_id', user.id);
 
       if (!error && teams) {
         // Store teams data for the loaded quiz
