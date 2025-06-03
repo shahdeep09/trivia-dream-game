@@ -237,11 +237,11 @@ const GameScreen = ({
         totalLifelinesUsed: (teamToUpdate.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
       };
 
-      // Get current user from auth context
-      const { data: { user } } = await supabase.auth.getUser();
+      // Get current user from auth context - properly await the promise
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      if (!user) {
-        console.error('No authenticated user found');
+      if (userError || !user) {
+        console.error('No authenticated user found:', userError);
         toast({
           title: "Error",
           description: "User not authenticated",
@@ -415,11 +415,11 @@ const GameScreen = ({
   const getCurrentTeamName = (): string => {
     if (!teamId) return "";
     
-    // Try user-specific teams first
-    const { data: { user } } = supabase.auth.getUser();
-    user.then(({ user: currentUser }) => {
-      if (currentUser) {
-        const userSpecificKey = `teams-${quizConfig.id}-${currentUser.id}`;
+    // Try user-specific teams first by getting current user properly
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
         const userTeams = localStorage.getItem(userSpecificKey);
         if (userTeams) {
           const teams: Team[] = JSON.parse(userTeams);
@@ -427,9 +427,20 @@ const GameScreen = ({
           if (team) return team.name;
         }
       }
-    });
-    
-    // Fallback to general teams
+      
+      // Fallback to general teams
+      const savedTeams = localStorage.getItem("quiz-teams");
+      if (savedTeams) {
+        const teams: Team[] = JSON.parse(savedTeams);
+        const team = teams.find(t => t.id === teamId);
+        return team ? team.name : "";
+      }
+      
+      return "";
+    };
+
+    // Since this is a render function, we'll use a different approach
+    // Try general teams first as fallback
     const savedTeams = localStorage.getItem("quiz-teams");
     if (savedTeams) {
       const teams: Team[] = JSON.parse(savedTeams);
