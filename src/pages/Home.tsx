@@ -52,33 +52,50 @@ const Home = () => {
     }
   }, [refreshKey]);
 
-  // Listen for team data updates and storage events
+  // Enhanced team data refresh with multiple event listeners
   useEffect(() => {
-    const handleTeamUpdate = () => {
-      console.log('Team data update event received, refreshing...');
-      setRefreshKey(prev => prev + 1);
+    const handleTeamUpdate = (event?: CustomEvent) => {
+      console.log('Team data update event received, refreshing...', event?.detail);
+      setTimeout(() => {
+        setRefreshKey(prev => prev + 1);
+      }, 100);
     };
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'millionaire-teams') {
         console.log('Storage change detected, refreshing team data...');
+        setTimeout(() => {
+          setRefreshKey(prev => prev + 1);
+        }, 100);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Page visible, refreshing team data...');
         setRefreshKey(prev => prev + 1);
       }
     };
 
-    window.addEventListener('teamDataUpdated', handleTeamUpdate);
+    window.addEventListener('teamDataUpdated', handleTeamUpdate as EventListener);
     window.addEventListener('storage', handleStorageChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
-      window.removeEventListener('teamDataUpdated', handleTeamUpdate);
+      window.removeEventListener('teamDataUpdated', handleTeamUpdate as EventListener);
       window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
   
-  // Save teams to localStorage whenever they change
+  // Save teams to localStorage whenever they change and force refresh
   useEffect(() => {
     if (teams.length > 0) {
       localStorage.setItem("millionaire-teams", JSON.stringify(teams));
+      // Force a small delay to ensure UI updates
+      setTimeout(() => {
+        setRefreshKey(prev => prev + 1);
+      }, 50);
     }
   }, [teams]);
 
@@ -104,6 +121,11 @@ const Home = () => {
       title: "Bonus Points Saved",
       description: "The bonus points have been updated for this team.",
     });
+    
+    // Force refresh to ensure data consistency
+    setTimeout(() => {
+      setRefreshKey(prev => prev + 1);
+    }, 100);
   };
 
   if (!currentQuizConfig) {
@@ -207,10 +229,10 @@ const Home = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex justify-between items-center">
-                      <div>
+                      <div className="space-y-1">
                         <p><span className="font-medium">Game Points:</span> {team.points}</p>
                         <p><span className="font-medium">Bonus Points:</span> {team.bonusPoints || 0}</p>
-                        <p><span className="font-medium">Total Points:</span> {calculateTotalPoints(team)}</p>
+                        <p><span className="font-medium text-millionaire-gold">Total Points:</span> <span className="font-bold text-millionaire-gold">{calculateTotalPoints(team)}</span></p>
                         <p><span className="font-medium">Games Played:</span> {team.gamesPlayed}</p>
                         <p><span className="font-medium">Lifelines Used:</span> {team.totalLifelinesUsed || 0}</p>
                       </div>
@@ -252,8 +274,8 @@ const Home = () => {
                       .map((team, index) => (
                         <TableRow key={team.id} className="border-b border-millionaire-accent">
                           <TableCell className="font-medium">{index + 1}</TableCell>
-                          <TableCell>{team.name}</TableCell>
-                          <TableCell>{team.points}</TableCell>
+                          <TableCell className="font-medium">{team.name}</TableCell>
+                          <TableCell className="font-bold text-millionaire-accent">{team.points}</TableCell>
                           <TableCell>
                             <Input
                               type="number"
@@ -263,10 +285,10 @@ const Home = () => {
                               onChange={(e) => handleBonusPointsChange(team.id, e.target.value)}
                             />
                           </TableCell>
-                          <TableCell className="font-bold text-millionaire-gold">
+                          <TableCell className="font-bold text-millionaire-gold text-lg">
                             {calculateTotalPoints(team)}
                           </TableCell>
-                          <TableCell>{team.gamesPlayed}</TableCell>
+                          <TableCell className="font-medium">{team.gamesPlayed}</TableCell>
                           <TableCell className="font-medium text-millionaire-accent">
                             {team.totalLifelinesUsed || 0}
                           </TableCell>

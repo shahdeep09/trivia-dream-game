@@ -5,7 +5,7 @@ import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Undo, CheckCircle } from "lucide-react";
+import { Undo, CheckCircle, Play } from "lucide-react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -51,6 +51,7 @@ const GameScreen = ({
   const [timerPaused, setTimerPaused] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const windowSize = useWindowSize();
@@ -81,14 +82,13 @@ const GameScreen = ({
       });
       
       setGameQuestions(preparedQuestions);
-      playSound("lets-play", settings);
     }
-  }, [questions, settings, quizConfig]);
+  }, [questions, quizConfig]);
 
   // Add spacebar shortcut for final answer
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.code === 'Space' && selectedOption !== null && !revealAnswer) {
+      if (event.code === 'Space' && selectedOption !== null && !revealAnswer && gameStarted) {
         event.preventDefault();
         handleFinalAnswer();
       }
@@ -96,10 +96,15 @@ const GameScreen = ({
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [selectedOption, revealAnswer]);
+  }, [selectedOption, revealAnswer, gameStarted]);
 
   const currentQuestion = gameQuestions[currentQuestionIndex];
   
+  const handleStartGame = () => {
+    setGameStarted(true);
+    playSound("lets-play", settings);
+  };
+
   const handleAnswer = (selectedIndex: number) => {
     setSelectedOption(selectedIndex);
     setRevealAnswer(true);
@@ -215,7 +220,7 @@ const GameScreen = ({
     setResultDialogOpen(false);
     setShowConfetti(false);
 
-    // Save team data immediately and ensure it persists
+    // Update team data with comprehensive data persistence
     if (teamId) {
       const savedTeams = localStorage.getItem("millionaire-teams");
       if (savedTeams) {
@@ -234,16 +239,22 @@ const GameScreen = ({
           return team;
         });
         
-        // Save to localStorage immediately
+        // Save to localStorage with forced write
         localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
         console.log('All teams after update:', updatedTeams);
         
-        // Force a synchronous storage event
-        window.dispatchEvent(new StorageEvent('storage', {
-          key: 'millionaire-teams',
-          newValue: JSON.stringify(updatedTeams),
-          oldValue: savedTeams
-        }));
+        // Force multiple event dispatches for better reliability
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('teamDataUpdated', { 
+            detail: { teamId, pointsAdded: cumulativePoints, gamesPlayed: 1, lifelinesUsed: totalLifelinesUsedInGame } 
+          }));
+          
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'millionaire-teams',
+            newValue: JSON.stringify(updatedTeams),
+            oldValue: savedTeams
+          }));
+        }, 100);
       }
     }
     
@@ -257,10 +268,10 @@ const GameScreen = ({
     console.log('Calling onGameEnd with result:', gameResult);
     onGameEnd(gameResult);
     
-    // Navigate after a small delay to ensure data is saved
+    // Navigate after ensuring data is saved
     setTimeout(() => {
       navigate('/');
-    }, 200);
+    }, 500);
   };
 
   const handleWalkAway = () => {
@@ -319,7 +330,7 @@ const GameScreen = ({
   };
 
   const handleFinalAnswer = () => {
-    if (selectedOption !== null && !revealAnswer) {
+    if (selectedOption !== null && !revealAnswer && gameStarted) {
       handleAnswer(selectedOption);
     }
   };
@@ -414,39 +425,52 @@ const GameScreen = ({
         </div>
         
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent flex items-center gap-1"
-            onClick={handleUndo}
-            disabled={actionHistory.length === 0}
-          >
-            <Undo size={16} />
-            Undo
-          </Button>
-          <Button
-            variant="outline"
-            className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary flex items-center gap-1"
-            onClick={handleFinalAnswer}
-            disabled={selectedOption === null || revealAnswer}
-          >
-            <CheckCircle size={16} />
-            Final Answer (Space)
-          </Button>
-          <Button
-            variant="outline"
-            className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent"
-            onClick={toggleTimerPause}
-          >
-            {timerPaused ? "Resume Timer" : "Pause Timer"}
-          </Button>
-          <Button
-            variant="outline"
-            className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary"
-            onClick={handleWalkAway}
-            disabled={gameOver}
-          >
-            Walk Away
-          </Button>
+          {!gameStarted && (
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+              onClick={handleStartGame}
+            >
+              <Play size={16} />
+              Start Game
+            </Button>
+          )}
+          {gameStarted && (
+            <>
+              <Button
+                variant="outline"
+                className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent flex items-center gap-1"
+                onClick={handleUndo}
+                disabled={actionHistory.length === 0}
+              >
+                <Undo size={16} />
+                Undo
+              </Button>
+              <Button
+                variant="outline"
+                className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary flex items-center gap-1"
+                onClick={handleFinalAnswer}
+                disabled={selectedOption === null || revealAnswer}
+              >
+                <CheckCircle size={16} />
+                Final Answer (Space)
+              </Button>
+              <Button
+                variant="outline"
+                className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent"
+                onClick={toggleTimerPause}
+              >
+                {timerPaused ? "Resume Timer" : "Pause Timer"}
+              </Button>
+              <Button
+                variant="outline"
+                className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary"
+                onClick={handleWalkAway}
+                disabled={gameOver}
+              >
+                Walk Away
+              </Button>
+            </>
+          )}
         </div>
       </div>
       
@@ -463,23 +487,39 @@ const GameScreen = ({
         
         {/* Question area */}
         <div className="md:w-3/4 flex-grow flex flex-col items-center justify-center p-4">
-          <Question
-            question={currentQuestion}
-            onAnswer={handleAnswer}
-            revealAnswer={revealAnswer}
-            disabledOptions={disabledOptions}
-            settings={settings}
-            selectedOption={selectedOption}
-            showResult={showResult}
-            onOptionSelect={handleOptionSelect}
-            onTimeUp={handleTimeUp}
-            timerPaused={timerPaused}
-            lifelinesUsed={lifelinesUsed}
-            onUseLifeline={handleUseLifeline}
-            questionIndex={currentQuestionIndex}
-            timeLimit={currentConfig.timeLimit}
-            quizLogo={quizConfig.logo}
-          />
+          {!gameStarted ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="text-center mb-8">
+                <h2 className="text-4xl font-bold text-millionaire-gold mb-4">Ready to Play?</h2>
+                <p className="text-xl text-millionaire-light mb-8">
+                  Press the Start Game button when you're ready to begin!
+                </p>
+                {teamName && (
+                  <p className="text-lg text-millionaire-accent">
+                    Playing as: <span className="font-bold">{teamName}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <Question
+              question={currentQuestion}
+              onAnswer={handleAnswer}
+              revealAnswer={revealAnswer}
+              disabledOptions={disabledOptions}
+              settings={settings}
+              selectedOption={selectedOption}
+              showResult={showResult}
+              onOptionSelect={handleOptionSelect}
+              onTimeUp={handleTimeUp}
+              timerPaused={timerPaused}
+              lifelinesUsed={lifelinesUsed}
+              onUseLifeline={handleUseLifeline}
+              questionIndex={currentQuestionIndex}
+              timeLimit={currentConfig.timeLimit}
+              quizLogo={quizConfig.logo}
+            />
+          )}
         </div>
       </div>
       
