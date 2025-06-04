@@ -1,4 +1,3 @@
-
 // Centralized Sound Management System
 // Single source of truth for all game audio
 
@@ -27,6 +26,7 @@ class SoundManager {
       'correct-answer': '/sounds/correct-answer.mp3.mp3',
       'wrong-answer': '/sounds/wrong-answer.mp3.mp3',
       'lifeline': '/sounds/lifeline.mp3.mp3',
+      'ticktick': '/sounds/ticktick.mp3.mp3',
       'suspense': '/sounds/suspense.mp3.mp3',
       'win': '/sounds/win.mp3.mp3'
     };
@@ -209,10 +209,10 @@ class SoundManager {
     if (questionIndex >= 5) {
       this.play('lets-play');
       
-      // Start lifeline sound after lets-play completes (2 second delay)
+      // Start ticktick sound after lets-play completes (2 second delay) for questions 6+
       this.lifelineTimeout = window.setTimeout(() => {
         if (!this.isMuted) {
-          this.play('lifeline');
+          this.play('ticktick');
         }
         this.lifelineTimeout = null;
       }, 2000);
