@@ -133,15 +133,15 @@ class SoundManager {
   }
 
   public handleAnswerResult(isCorrect: boolean, questionIndex: number): void {
-    // Stop final-answer and suspense sounds when result is shown
-    this.stop('final-answer');
-    this.stop('suspense');
-    
-    // Clear any pending suspense timeout
+    // Clear any pending suspense timeout first
     if (this.suspenseTimeout) {
       clearTimeout(this.suspenseTimeout);
       this.suspenseTimeout = null;
     }
+    
+    // Stop final-answer and suspense sounds immediately when result is shown
+    this.stop('final-answer');
+    this.stop('suspense');
     
     if (isCorrect) {
       // Only play correct-answer for questions 6+ (index 5+)
@@ -171,16 +171,34 @@ class SoundManager {
     this.play('lifeline');
   }
 
-  public handleFinalAnswerClicked(): void {
-    // Play final-answer immediately
-    this.play('final-answer');
-    
-    // Set timeout to play suspense after 5 seconds
-    this.suspenseTimeout = window.setTimeout(() => {
-      if (!this.isMuted) {
-        this.play('suspense');
+  public handleFinalAnswerClicked(questionIndex: number): void {
+    // Only apply final-answer + suspense logic for Q6+ (normal-paced round)
+    if (questionIndex >= 5) {
+      // Clear any existing timeout first
+      if (this.suspenseTimeout) {
+        clearTimeout(this.suspenseTimeout);
+        this.suspenseTimeout = null;
       }
-    }, 5000);
+      
+      // Stop all sounds to ensure clean transition
+      this.stopAll();
+      
+      // Play final-answer immediately
+      this.play('final-answer');
+      
+      // Set timeout to transition to suspense after 5 seconds
+      this.suspenseTimeout = window.setTimeout(() => {
+        if (!this.isMuted && this.isPlaying('final-answer')) {
+          // Stop final-answer cleanly and play suspense
+          this.stop('final-answer');
+          this.play('suspense');
+        }
+        this.suspenseTimeout = null;
+      }, 5000);
+    } else {
+      // For Q1-5, just play final-answer normally
+      this.play('final-answer');
+    }
   }
 
   public handleGameEnd(): void {

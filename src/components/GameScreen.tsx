@@ -521,8 +521,8 @@ const GameScreen = ({
 
   const handleFinalAnswer = () => {
     if (selectedOption !== null && !revealAnswer && gameStarted) {
-      // Use centralized sound system
-      soundManager.handleFinalAnswerClicked();
+      // Use centralized sound system with question index for proper logic
+      soundManager.handleFinalAnswerClicked(currentQuestionIndex);
       
       // Small delay before processing the answer
       setTimeout(() => {
