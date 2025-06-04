@@ -1,5 +1,5 @@
 import { toast } from "@/hooks/use-toast";
-import { playSound } from "./soundUtils";
+import { playSound } from "./sound";
 
 export interface Question {
   id: string;
