@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, playSound, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
+import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
+import { playSound } from "@/utils/soundUtils";
 import Question from "./Question";
 import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -178,7 +179,8 @@ const GameScreen = ({
   
   const handleStartGame = () => {
     setGameStarted(true);
-    playSound("lets-play", settings);
+    // Play lets-play sound when "Start Game" is pressed
+    playSound("lets-play", settings.soundEffects);
   };
 
   const handleAnswer = (selectedIndex: number) => {
@@ -196,10 +198,11 @@ const GameScreen = ({
     const isCorrect = selectedIndex === currentQuestion.correctOptionIndex;
     
     if (isCorrect) {
+      // Play fast-forward for questions 1-5 (index 0-4), correct-answer for questions 6+ (index 5+)
       if (currentQuestionIndex < 5) {
-        playSound("fast-forward", settings, currentQuestionIndex);
+        playSound("fast-forward", settings.soundEffects);
       } else {
-        playSound("correct", settings);
+        playSound("correct-answer", settings.soundEffects);
       }
       
       const newCumulativePoints = cumulativePoints + currentQuestion.value;
@@ -210,7 +213,8 @@ const GameScreen = ({
         if (currentQuestionIndex === gameQuestions.length - 1) {
           setGameWon(true);
           setGameOver(true);
-          playSound("win", settings);
+          // Play win sound when winning the entire game
+          playSound("win", settings.soundEffects);
           setShowConfetti(true);
           setDialogMessage(`Congratulations! You've won ${formatMoney(newCumulativePoints)}!`);
         } else {
@@ -223,7 +227,8 @@ const GameScreen = ({
         setDialogOpen(true);
       }, 2000);
     } else {
-      playSound("wrong", settings);
+      // Play wrong-answer sound for incorrect answers
+      playSound("wrong-answer", settings.soundEffects);
       
       setTimeout(() => {
         setGameOver(true);
@@ -279,7 +284,8 @@ const GameScreen = ({
   const handleUseLifeline = (lifelineId: string, result: any) => {
     setLifelinesUsed({ ...lifelinesUsed, [lifelineId]: true });
     setTotalLifelinesUsedInGame(totalLifelinesUsedInGame + 1);
-    playSound("lifeline", settings);
+    // Play lifeline sound when using any lifeline
+    playSound("lifeline", settings.soundEffects);
     
     // Only apply fifty-fifty effect for actual fifty-fifty lifeline
     if (lifelineId === "fifty-fifty" && result) {
@@ -471,9 +477,6 @@ const GameScreen = ({
 
   const toggleTimerPause = () => {
     setTimerPaused(!timerPaused);
-    if (!timerPaused && currentQuestionIndex < 5) {
-      playSound("fast-forward", settings, currentQuestionIndex);
-    }
   };
 
   const handleUndo = () => {
@@ -506,7 +509,13 @@ const GameScreen = ({
 
   const handleFinalAnswer = () => {
     if (selectedOption !== null && !revealAnswer && gameStarted) {
-      handleAnswer(selectedOption);
+      // Play final-answer sound when confirming final answer
+      playSound("final-answer", settings.soundEffects);
+      
+      // Small delay before processing the answer to let the sound play
+      setTimeout(() => {
+        handleAnswer(selectedOption);
+      }, 1000);
     }
   };
 
