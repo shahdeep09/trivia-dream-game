@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import GameScreen, { GameResult } from "@/components/GameScreen";
 import QuestionManager from "@/components/QuestionManager";
 import CSVUploader from "@/components/CSVUploader";
-import { Question, GameSettings, DEFAULT_GAME_SETTINGS } from "@/utils/gameUtils";
+import { Question, GameSettings } from "@/utils/game/types";
+import { DEFAULT_GAME_SETTINGS } from "@/utils/game/constants";
 import { SAMPLE_QUESTIONS } from "@/data/questions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";

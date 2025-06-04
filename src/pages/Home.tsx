@@ -1,17 +1,23 @@
-
 import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import QuizHeader from "@/components/home/QuizHeader";
+import { Badge } from "@/components/ui/badge";
+import { Users, Plus, Play, Trophy, Settings, Upload } from "lucide-react";
+import { Team } from "@/utils/game/types";
+import { v4 as uuidv4 } from "uuid";
 import TeamsTab from "@/components/home/TeamsTab";
 import PointsTable from "@/components/home/PointsTable";
 import NoQuizConfigured from "@/components/home/NoQuizConfigured";
-import { UserMenu } from "@/components/auth/UserMenu";
-import { useNavigate } from "react-router-dom";
-import { QuizConfig } from "@/types/quiz";
-import { Team } from "@/utils/gameUtils";
-import { supabase } from "@/integrations/supabase/client";
+import QuizHeader from "@/components/home/QuizHeader";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
+import { QuizConfig } from "@/types/quiz";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 const Home = () => {

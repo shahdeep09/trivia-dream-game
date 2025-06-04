@@ -1,6 +1,6 @@
-
-import { Question } from "./gameUtils";
-import * as XLSX from 'xlsx';
+import { parse } from 'papaparse';
+import { Question } from './game/types';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Parse CSV data into Question objects

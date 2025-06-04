@@ -1,23 +1,27 @@
 import { useState, useEffect } from "react";
 import { Question as QuestionType, Team, GameAction, GameSettings } from "@/utils/game/types";
-import { DEFAULT_GAME_SETTINGS, POINTS_VALUES, MILESTONE_VALUES } from "@/utils/game/constants";
-import { formatMoney, getGuaranteedMoney, shuffleOptions, getQuestionConfig } from "@/utils/game/questionUtils";
-import { addGameAction, undoLastAction } from "@/utils/game/actionHistory";
+import { DEFAULT_GAME_SETTINGS } from "@/utils/game/constants";
+import { formatMoney, shuffleOptions } from "@/utils/game/questionUtils";
 import { soundManager } from "@/utils/sound/RefactoredSoundManager";
 import Question from "./Question";
 import MoneyLadder from "./MoneyLadder";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Undo, CheckCircle, Play, Volume2, VolumeX } from "lucide-react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import Lifeline from "./Lifeline";
 import { QuizConfig } from "@/types/quiz";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Import the new smaller components
+import GameHeader from "./game/GameHeader";
+import GameInfo from "./game/GameInfo";
+import GameControls from "./game/GameControls";
+import GameLifelines from "./game/GameLifelines";
+import GameDialogs from "./game/GameDialogs";
+import GameStartScreen from "./game/GameStartScreen";
 
 interface GameScreenProps {
   questions: QuestionType[];
@@ -545,22 +549,6 @@ const GameScreen = ({
     );
   }
 
-  const renderLifelines = () => {
-    if (!quizConfig.selectedLifelines) return null;
-    
-    return quizConfig.selectedLifelines.map((lifelineId, index) => (
-      <Lifeline
-        key={`${lifelineId}-${index}`}
-        lifelineId={lifelineId}
-        isUsed={lifelinesUsed[lifelineId] || false}
-        onUse={handleUseLifeline}
-        currentQuestion={currentQuestion}
-        settings={currentSettings}
-        quizConfig={quizConfig}
-      />
-    ));
-  };
-
   return (
     <div className="flex flex-col h-screen bg-millionaire-dark text-millionaire-light overflow-hidden">
       {showConfetti && (
@@ -573,97 +561,36 @@ const GameScreen = ({
       )}
       
       {/* Header with Samaj name and logo */}
-      <div className="bg-millionaire-primary border-b border-millionaire-accent p-4">
-        <div className="flex items-center justify-center">
-          {quizConfig.logo && (
-            <img 
-              src={quizConfig.logo} 
-              alt="Quiz Logo" 
-              className="w-12 h-12 object-cover rounded mr-4"
-            />
-          )}
-          <h1 className="text-3xl font-bold text-millionaire-gold">{quizConfig.samajName}</h1>
-        </div>
-      </div>
+      <GameHeader quizConfig={quizConfig} />
       
       {/* Control bar */}
       <div className="flex justify-between items-center p-4 bg-millionaire-primary border-b border-millionaire-accent">
-        <div className="flex items-center gap-4">
-          {teamName && (
-            <div className="bg-millionaire-secondary px-4 py-2 rounded-lg text-center">
-              <span className="text-millionaire-gold font-bold mr-2">Team:</span>
-              <span className="text-white font-medium">{teamName}</span>
-            </div>
-          )}
-          
-          <div className="text-millionaire-gold font-bold text-2xl">
-            Total: {formatMoney(cumulativePoints)}
-          </div>
-        </div>
+        <GameInfo teamName={teamName} cumulativePoints={cumulativePoints} />
 
         {/* Lifelines */}
-        <div className="flex justify-center gap-6">
-          {renderLifelines()}
-        </div>
+        <GameLifelines
+          quizConfig={quizConfig}
+          lifelinesUsed={lifelinesUsed}
+          currentQuestion={currentQuestion}
+          settings={currentSettings}
+          onUseLifeline={handleUseLifeline}
+        />
         
-        <div className="flex gap-2">
-          {/* Mute Button */}
-          <Button
-            variant="outline"
-            className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent flex items-center gap-1"
-            onClick={toggleMute}
-            title={isMuted ? "Unmute" : "Mute"}
-          >
-            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </Button>
-          
-          {!gameStarted && (
-            <Button
-              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-              onClick={handleStartGame}
-            >
-              <Play size={16} />
-              Start Game
-            </Button>
-          )}
-          {gameStarted && (
-            <>
-              <Button
-                variant="outline"
-                className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent flex items-center gap-1"
-                onClick={handleUndo}
-                disabled={actionHistory.length === 0}
-              >
-                <Undo size={16} />
-                Undo
-              </Button>
-              <Button
-                variant="outline"
-                className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary flex items-center gap-1"
-                onClick={handleFinalAnswer}
-                disabled={selectedOption === null || revealAnswer}
-              >
-                <CheckCircle size={16} />
-                Final Answer (Space)
-              </Button>
-              <Button
-                variant="outline"
-                className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent"
-                onClick={toggleTimerPause}
-              >
-                {timerPaused ? "Resume Timer" : "Pause Timer"}
-              </Button>
-              <Button
-                variant="outline"
-                className="border-millionaire-gold text-millionaire-gold hover:bg-millionaire-gold hover:text-millionaire-primary"
-                onClick={handleWalkAway}
-                disabled={gameOver}
-              >
-                Walk Away
-              </Button>
-            </>
-          )}
-        </div>
+        <GameControls
+          gameStarted={gameStarted}
+          isMuted={isMuted}
+          selectedOption={selectedOption}
+          revealAnswer={revealAnswer}
+          gameOver={gameOver}
+          timerPaused={timerPaused}
+          actionHistory={actionHistory}
+          onStartGame={handleStartGame}
+          onToggleMute={toggleMute}
+          onUndo={handleUndo}
+          onFinalAnswer={handleFinalAnswer}
+          onToggleTimerPause={toggleTimerPause}
+          onWalkAway={handleWalkAway}
+        />
       </div>
       
       {/* Main content area */}
@@ -680,19 +607,7 @@ const GameScreen = ({
         {/* Question area - increased width from md:w-3/4 to md:w-4/5 */}
         <div className="md:w-4/5 flex-grow flex flex-col items-center justify-center p-4">
           {!gameStarted ? (
-            <div className="flex flex-col items-center justify-center h-full">
-              <div className="text-center mb-8">
-                <h2 className="text-4xl font-bold text-millionaire-gold mb-4">Ready to Play?</h2>
-                <p className="text-xl text-millionaire-light mb-8">
-                  Press the Start Game button when you're ready to begin!
-                </p>
-                {teamName && (
-                  <p className="text-lg text-millionaire-accent">
-                    Playing as: <span className="font-bold text-millionaire-gold">{teamName}</span>
-                  </p>
-                )}
-              </div>
-            </div>
+            <GameStartScreen teamName={teamName} />
           ) : (
             <Question
               question={currentQuestion}
@@ -715,82 +630,22 @@ const GameScreen = ({
         </div>
       </div>
       
-      {/* Decision Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-millionaire-primary border-millionaire-accent">
-          <DialogHeader>
-            <DialogTitle className="text-millionaire-gold">{gameOver ? "Game Over" : "Correct!"}</DialogTitle>
-            <DialogDescription className="text-millionaire-light text-lg whitespace-pre-line">
-              {dialogMessage}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {showExplanation && currentQuestion.explanation && (
-            <div className="mt-4 p-4 bg-millionaire-secondary rounded-md">
-              <h3 className="font-bold text-millionaire-gold mb-2">Explanation:</h3>
-              <p className="text-millionaire-light">{currentQuestion.explanation}</p>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button
-              onClick={handleNextQuestion}
-              className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
-            >
-              {gameOver ? "See Results" : "Continue"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Final Results Dialog */}
-      <Dialog open={resultDialogOpen} onOpenChange={setResultDialogOpen}>
-        <DialogContent className="bg-millionaire-primary border-millionaire-accent">
-          <DialogHeader>
-            <DialogTitle className="text-millionaire-gold text-center text-2xl mb-4">
-              {gameWon ? "Congratulations!" : "Game Over"}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="py-6 text-center">
-            {gameWon ? (
-              <div className="animate-pulse">
-                <h3 className="text-3xl font-bold text-millionaire-gold mb-4">
-                  You're a Millionaire!
-                </h3>
-                <p className="text-xl mb-6">
-                  You've won {formatMoney(cumulativePoints)}!
-                </p>
-              </div>
-            ) : (
-              <div>
-                <p className="text-lg mb-4">
-                  You made it to question #{currentQuestionIndex + 1}
-                </p>
-                <p className="text-xl font-bold mb-6">
-                  You walk away with {formatMoney(cumulativePoints)}
-                </p>
-              </div>
-            )}
-            
-            <div className="flex justify-center space-x-4">
-              <Button
-                onClick={() => window.location.href = '/'}
-                variant="outline"
-                className="border-millionaire-accent"
-              >
-                Back to Home
-              </Button>
-              <Button
-                onClick={handleGameEnd}
-                className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
-              >
-                Save Results
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Game Dialogs */}
+      <GameDialogs
+        dialogOpen={dialogOpen}
+        resultDialogOpen={resultDialogOpen}
+        gameOver={gameOver}
+        gameWon={gameWon}
+        dialogMessage={dialogMessage}
+        showExplanation={showExplanation}
+        currentQuestion={currentQuestion}
+        cumulativePoints={cumulativePoints}
+        currentQuestionIndex={currentQuestionIndex}
+        onDialogOpenChange={setDialogOpen}
+        onResultDialogOpenChange={setResultDialogOpen}
+        onNextQuestion={handleNextQuestion}
+        onGameEnd={handleGameEnd}
+      />
     </div>
   );
 };

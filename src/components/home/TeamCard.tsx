@@ -1,8 +1,9 @@
-
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import React from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Team } from "@/utils/game/types";
 import { Link } from "react-router-dom";
-import { Team } from "@/utils/gameUtils";
+import { Play, Trophy, Target, Zap } from "lucide-react";
 
 interface TeamCardProps {
   team: Team;

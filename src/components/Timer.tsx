@@ -1,59 +1,41 @@
-
-import { useEffect, useState } from "react";
-import { GameSettings } from "@/utils/gameUtils";
-import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Progress } from "@/components/ui/progress";
+import { GameSettings } from "@/utils/game/types";
 
 interface TimerProps {
-  isActive: boolean;
+  timeLimit: number;
   onTimeUp: () => void;
+  timerPaused: boolean;
   settings: GameSettings;
-  isPaused?: boolean;
 }
 
-const Timer = ({ isActive, onTimeUp, settings, isPaused = false }: TimerProps) => {
-  const [timeLeft, setTimeLeft] = useState(settings.timePerQuestion);
+const Timer = ({ timeLimit, onTimeUp, timerPaused, settings }: TimerProps) => {
+  const [timeLeft, setTimeLeft] = useState(timeLimit);
 
   useEffect(() => {
-    // Reset timer when question changes
-    if (isActive) {
-      setTimeLeft(settings.timePerQuestion);
-    }
-  }, [isActive, settings.timePerQuestion]);
+    setTimeLeft(timeLimit); // Reset timer when timeLimit changes
+  }, [timeLimit]);
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    
-    if (isActive && !isPaused && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          const newTime = prevTime - 1;
-          if (newTime <= 0) {
-            clearInterval(interval);
-            onTimeUp();
-          }
-          return newTime;
-        });
+    let intervalId: NodeJS.Timeout;
+
+    if (!timerPaused && timeLeft > 0) {
+      intervalId = setInterval(() => {
+        setTimeLeft(timeLeft - 1);
       }, 1000);
+    } else if (timeLeft === 0) {
+      onTimeUp();
     }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isActive, isPaused, timeLeft, onTimeUp]);
+
+    return () => clearInterval(intervalId);
+  }, [timeLeft, timerPaused, onTimeUp]);
+
+  const percentage = (timeLeft / timeLimit) * 100;
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="w-24 h-24 rounded-full border-4 border-millionaire-accent bg-millionaire-primary flex items-center justify-center">
-        <span className="text-2xl font-bold text-millionaire-gold">
-          {Math.floor(timeLeft / 60)}:{timeLeft % 60 < 10 ? '0' : ''}{timeLeft % 60}
-        </span>
-      </div>
-      {isPaused && (
-        <div className="mt-2 text-millionaire-gold font-semibold">
-          Timer Paused
-        </div>
-      )}
+    <div>
+      <Progress value={percentage} className="h-4" />
+      <div className="text-center text-sm mt-1">Time Remaining: {timeLeft} seconds</div>
     </div>
   );
 };
