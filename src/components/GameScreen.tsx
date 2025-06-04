@@ -234,8 +234,10 @@ const GameScreen = ({
         setDialogOpen(true);
       }, 2000);
     } else {
-      // Stop fast-forward sound when wrong answer is given
-      stopFastForwardSound();
+      // Only stop fast-forward sound for questions 6+ when wrong answer is given
+      if (currentQuestionIndex >= 5) {
+        stopFastForwardSound();
+      }
       // Play wrong-answer sound for incorrect answers (all questions)
       playSound("wrong-answer", currentSettings.soundEffects);
       
@@ -274,16 +276,12 @@ const GameScreen = ({
       
       // For questions 6+ (index 5+), play lets-play sound when displaying next question
       if (nextQuestionIndex >= 5) {
-        // Stop fast-forward sound first
+        // Stop fast-forward sound first (only for questions 6+)
         stopFastForwardSound();
         // Play lets-play sound for questions 6 onwards
         playSound("lets-play", currentSettings.soundEffects);
-      } else {
-        // Stop fast-forward sound after question 5 (index 4)
-        if (nextQuestionIndex >= 5) {
-          stopFastForwardSound();
-        }
       }
+      // Note: No need to stop fast-forward for questions 1-5, let it continue playing
       
       setRevealAnswer(false);
       setShowResult(false);
@@ -295,8 +293,10 @@ const GameScreen = ({
 
   const handleTimeUp = () => {
     setGameOver(true);
-    // Stop fast-forward sound when time is up
-    stopFastForwardSound();
+    // Only stop fast-forward sound for questions 6+ when time is up
+    if (currentQuestionIndex >= 5) {
+      stopFastForwardSound();
+    }
     // Stop lifeline sound when time is up
     stopLifelineSound();
     setDialogMessage(
@@ -491,8 +491,10 @@ const GameScreen = ({
 
   const handleWalkAway = () => {
     setGameOver(true);
-    // Stop fast-forward sound when walking away
-    stopFastForwardSound();
+    // Only stop fast-forward sound for questions 6+ when walking away
+    if (currentQuestionIndex >= 5) {
+      stopFastForwardSound();
+    }
     // Stop lifeline sound when walking away
     stopLifelineSound();
     setDialogMessage(
@@ -520,8 +522,8 @@ const GameScreen = ({
   };
 
   const toggleTimerPause = () => {
-    // Stop fast-forward sound when timer is paused
-    if (!timerPaused) {
+    // Only stop fast-forward sound for questions 6+ when timer is paused
+    if (!timerPaused && currentQuestionIndex >= 5) {
       stopFastForwardSound();
     }
     setTimerPaused(!timerPaused);
