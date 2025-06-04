@@ -29,6 +29,7 @@ const fallbackSounds: Record<string, (duration: number) => void> = {
 const activeOscillators: Record<string, OscillatorNode[]> = {
   'suspense': [],
   'fast-forward': [], // For fast-forward sound
+  'lifeline': [], // For lifeline sound
 };
 
 // Function to create a simple beep sound
@@ -176,7 +177,7 @@ export const stopSuspenseSound = (): void => {
   activeOscillators.suspense = [];
 };
 
-// New function to stop the fast-forward sound
+// Stop the fast-forward sound
 export const stopFastForwardSound = (): void => {
   // Stop audio file if playing
   const sound = SOUNDS['fast-forward'];
@@ -194,6 +195,47 @@ export const stopFastForwardSound = (): void => {
     }
   });
   activeOscillators['fast-forward'] = [];
+};
+
+// Stop the lifeline sound
+export const stopLifelineSound = (): void => {
+  // Stop audio file if playing
+  const sound = SOUNDS['lifeline'];
+  if (sound) {
+    sound.pause();
+    sound.currentTime = 0;
+  }
+  
+  // Stop any active fallback oscillators
+  activeOscillators['lifeline']?.forEach(oscillator => {
+    try {
+      oscillator.stop();
+    } catch (e) {
+      // Oscillator might already be stopped
+    }
+  });
+  activeOscillators['lifeline'] = [];
+};
+
+// Stop all sounds
+export const stopAllSounds = (): void => {
+  // Stop all audio files
+  Object.values(SOUNDS).forEach(sound => {
+    sound.pause();
+    sound.currentTime = 0;
+  });
+  
+  // Stop all active oscillators
+  Object.keys(activeOscillators).forEach(key => {
+    activeOscillators[key].forEach(oscillator => {
+      try {
+        oscillator.stop();
+      } catch (e) {
+        // Oscillator might already be stopped
+      }
+    });
+    activeOscillators[key] = [];
+  });
 };
 
 // Play a sound effect - now with sounds enabled by default

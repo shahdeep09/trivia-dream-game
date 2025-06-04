@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
-import { playSound } from "@/utils/soundUtils";
+import { playSound, stopFastForwardSound, stopLifelineSound, stopAllSounds } from "@/utils/soundUtils";
 import Question from "./Question";
 import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Undo, CheckCircle, Play } from "lucide-react";
+import { Undo, CheckCircle, Play, Volume2, VolumeX } from "lucide-react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -57,6 +57,7 @@ const GameScreen = ({
   const [showConfetti, setShowConfetti] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [teamName, setTeamName] = useState<string>("");
+  const [isMuted, setIsMuted] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const windowSize = useWindowSize();
@@ -70,16 +71,11 @@ const GameScreen = ({
   // Action history for undo functionality
   const [actionHistory, setActionHistory] = useState<GameAction[]>([]);
 
-  // Initialize lifelines based on quiz config
-  useEffect(() => {
-    if (quizConfig?.selectedLifelines) {
-      const initialLifelines: Record<string, boolean> = {};
-      quizConfig.selectedLifelines.forEach(lifeline => {
-        initialLifelines[lifeline] = false;
-      });
-      setLifelinesUsed(initialLifelines);
-    }
-  }, [quizConfig]);
+  // Update settings when mute state changes
+  const currentSettings = {
+    ...settings,
+    soundEffects: settings.soundEffects && !isMuted
+  };
 
   // Load team name when component mounts
   useEffect(() => {
@@ -180,12 +176,12 @@ const GameScreen = ({
   const handleStartGame = () => {
     setGameStarted(true);
     // Play lets-play sound when "Start Game" is pressed
-    playSound("lets-play", settings.soundEffects);
+    playSound("lets-play", currentSettings.soundEffects);
     
     // Start fast-forward sound after lets-play completes (assuming lets-play is ~2 seconds)
     setTimeout(() => {
       if (currentQuestionIndex < 5) {
-        playSound("fast-forward", settings.soundEffects);
+        playSound("fast-forward", currentSettings.soundEffects);
       }
     }, 2000);
   };
@@ -195,6 +191,9 @@ const GameScreen = ({
     setRevealAnswer(true);
     setShowResult(true);
     setTimerPaused(true);
+    
+    // Stop lifeline sound when answer is given
+    stopLifelineSound();
     
     const answerAction: GameAction = {
       type: 'ANSWER',
@@ -208,7 +207,7 @@ const GameScreen = ({
       // For questions 1-5 (index 0-4), don't play any sound for correct answers
       // For questions 6+ (index 5+), play correct-answer sound
       if (currentQuestionIndex >= 5) {
-        playSound("correct-answer", settings.soundEffects);
+        playSound("correct-answer", currentSettings.soundEffects);
       }
       
       const newCumulativePoints = cumulativePoints + currentQuestion.value;
@@ -219,8 +218,10 @@ const GameScreen = ({
         if (currentQuestionIndex === gameQuestions.length - 1) {
           setGameWon(true);
           setGameOver(true);
+          // Stop fast-forward sound when game ends
+          stopFastForwardSound();
           // Play win sound when winning the entire game
-          playSound("win", settings.soundEffects);
+          playSound("win", currentSettings.soundEffects);
           setShowConfetti(true);
           setDialogMessage(`Congratulations! You've won ${formatMoney(newCumulativePoints)}!`);
         } else {
@@ -233,8 +234,10 @@ const GameScreen = ({
         setDialogOpen(true);
       }, 2000);
     } else {
+      // Stop fast-forward sound when wrong answer is given
+      stopFastForwardSound();
       // Play wrong-answer sound for incorrect answers (all questions)
-      playSound("wrong-answer", settings.soundEffects);
+      playSound("wrong-answer", currentSettings.soundEffects);
       
       setTimeout(() => {
         setGameOver(true);
@@ -257,13 +260,23 @@ const GameScreen = ({
     setDialogOpen(false);
     setShowExplanation(false);
     
+    // Stop lifeline sound when moving to next question
+    stopLifelineSound();
+    
     if (gameOver) {
       setResultDialogOpen(true);
       return;
     }
     
     if (currentQuestionIndex < gameQuestions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      const nextQuestionIndex = currentQuestionIndex + 1;
+      setCurrentQuestionIndex(nextQuestionIndex);
+      
+      // Stop fast-forward sound after question 5 (index 4)
+      if (nextQuestionIndex >= 5) {
+        stopFastForwardSound();
+      }
+      
       setRevealAnswer(false);
       setShowResult(false);
       setSelectedOption(null);
@@ -274,6 +287,10 @@ const GameScreen = ({
 
   const handleTimeUp = () => {
     setGameOver(true);
+    // Stop fast-forward sound when time is up
+    stopFastForwardSound();
+    // Stop lifeline sound when time is up
+    stopLifelineSound();
     setDialogMessage(
       `Time's up! You ran out of time.
       You leave with ${formatMoney(cumulativePoints)}`
@@ -291,7 +308,7 @@ const GameScreen = ({
     setLifelinesUsed({ ...lifelinesUsed, [lifelineId]: true });
     setTotalLifelinesUsedInGame(totalLifelinesUsedInGame + 1);
     // Play lifeline sound when using any lifeline (all questions)
-    playSound("lifeline", settings.soundEffects);
+    playSound("lifeline", currentSettings.soundEffects);
     
     // Only apply fifty-fifty effect for actual fifty-fifty lifeline
     if (lifelineId === "fifty-fifty" && result) {
@@ -399,6 +416,9 @@ const GameScreen = ({
   const handleGameEnd = async () => {
     setResultDialogOpen(false);
     setShowConfetti(false);
+    
+    // Stop all sounds when game ends
+    stopAllSounds();
 
     console.log('Game ending, saving points. TeamId:', teamId, 'Points:', cumulativePoints);
 
@@ -463,6 +483,10 @@ const GameScreen = ({
 
   const handleWalkAway = () => {
     setGameOver(true);
+    // Stop fast-forward sound when walking away
+    stopFastForwardSound();
+    // Stop lifeline sound when walking away
+    stopLifelineSound();
     setDialogMessage(
       `You've decided to walk away with ${formatMoney(cumulativePoints)}.
        The correct answer was ${currentQuestion.options[currentQuestion.correctOptionIndex]}.`
@@ -481,11 +505,23 @@ const GameScreen = ({
     setTimerPaused(true);
     
     // Play final-answer sound when selecting an option
-    playSound("final-answer", settings.soundEffects);
+    playSound("final-answer", currentSettings.soundEffects);
   };
 
   const toggleTimerPause = () => {
+    // Stop fast-forward sound when timer is paused
+    if (!timerPaused) {
+      stopFastForwardSound();
+    }
     setTimerPaused(!timerPaused);
+  };
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    if (!isMuted) {
+      // If muting, stop all sounds
+      stopAllSounds();
+    }
   };
 
   const handleUndo = () => {
@@ -548,7 +584,7 @@ const GameScreen = ({
         isUsed={lifelinesUsed[lifelineId] || false}
         onUse={handleUseLifeline}
         currentQuestion={currentQuestion}
-        settings={settings}
+        settings={currentSettings}
         quizConfig={quizConfig}
       />
     ));
@@ -600,6 +636,16 @@ const GameScreen = ({
         </div>
         
         <div className="flex gap-2">
+          {/* Mute Button */}
+          <Button
+            variant="outline"
+            className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent flex items-center gap-1"
+            onClick={toggleMute}
+            title={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </Button>
+          
           {!gameStarted && (
             <Button
               className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
@@ -682,7 +728,7 @@ const GameScreen = ({
               onAnswer={handleAnswer}
               revealAnswer={revealAnswer}
               disabledOptions={disabledOptions}
-              settings={settings}
+              settings={currentSettings}
               selectedOption={selectedOption}
               showResult={showResult}
               onOptionSelect={handleOptionSelect}
