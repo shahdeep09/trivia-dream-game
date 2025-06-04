@@ -1,4 +1,5 @@
 import { toast } from "@/hooks/use-toast";
+import { playSound } from "./soundUtils";
 
 export interface Question {
   id: string;
@@ -214,7 +215,7 @@ export function askTheAudience(question: Question): number[] {
 }
 
 // Enhanced play sound function with fast-forward logic
-export function playSound(
+export function playSoundWithLogic(
   soundName: 'correct' | 'wrong' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline' | 'fast-forward',
   settings: GameSettings,
   questionLevel?: number
@@ -223,7 +224,7 @@ export function playSound(
   
   // If we're within the first 5 questions and the sound is 'correct', use fast-forward instead
   if (questionLevel !== undefined && questionLevel < 5 && soundName === 'correct') {
-    playSoundEffect('fast-forward', settings.soundEffects);
+    playSound('fast-forward', settings.soundEffects);
     
     // Also show a toast notification for visual feedback
     toast({
@@ -234,8 +235,22 @@ export function playSound(
     return;
   }
   
+  // Map the sound names to match the actual sound file names
+  let actualSoundName: 'correct-answer' | 'wrong-answer' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline' | 'fast-forward';
+  
+  switch (soundName) {
+    case 'correct':
+      actualSoundName = 'correct-answer';
+      break;
+    case 'wrong':
+      actualSoundName = 'wrong-answer';
+      break;
+    default:
+      actualSoundName = soundName as any;
+  }
+  
   // For all other cases, play the requested sound
-  playSoundEffect(soundName, settings.soundEffects);
+  playSound(actualSoundName, settings.soundEffects);
   
   // Also show a toast notification for visual feedback
   toast({
