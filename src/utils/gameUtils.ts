@@ -32,7 +32,7 @@ export interface GameSettings {
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   timePerQuestion: 30,
-  soundEffects: true,
+  soundEffects: true, // Ensure sounds are enabled by default
   lifelineNames: {
     lifeline1: "50:50",
     lifeline2: "Phone a Friend",

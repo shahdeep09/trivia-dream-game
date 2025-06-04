@@ -1,22 +1,22 @@
 // Sound utility functions for the game
 
-// Sound file mapping
+// Sound file mapping - updated to match uploaded files
 const SOUNDS: Record<string, HTMLAudioElement> = {
-  'correct': new Audio('/sounds/correct-answer.mp3'),
-  'wrong': new Audio('/sounds/wrong-answer.mp3'),
-  'final-answer': new Audio('/sounds/final-answer.mp3'),
-  'lets-play': new Audio('/sounds/lets-play.mp3'),
-  'suspense': new Audio('/sounds/suspense.mp3'),
-  'win': new Audio('/sounds/win.mp3'),
-  'lifeline': new Audio('/sounds/lifeline.mp3'),
-  'fast-forward': new Audio('/sounds/fast-forward.mp3'), // Fast-forward sound
+  'correct-answer': new Audio('/sounds/correct-answer.mp3.mp3'),
+  'wrong-answer': new Audio('/sounds/wrong-answer.mp3.mp3'),
+  'final-answer': new Audio('/sounds/final-answer.mp3.mp3'),
+  'lets-play': new Audio('/sounds/lets-play.mp3.mp3'),
+  'suspense': new Audio('/sounds/suspense.mp3.mp3'),
+  'win': new Audio('/sounds/win.mp3.mp3'),
+  'lifeline': new Audio('/sounds/lifeline.mp3.mp3'),
+  'fast-forward': new Audio('/sounds/fast-forward.mp3.mp3'),
 };
 
 // Fallback using Web Audio API when files aren't available
 const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 const fallbackSounds: Record<string, (duration: number) => void> = {
-  'correct': createBeepSound(700, 0.3),
-  'wrong': createBeepSound(200, 0.5),
+  'correct-answer': createBeepSound(700, 0.3),
+  'wrong-answer': createBeepSound(200, 0.5),
   'final-answer': createBeepSound(400, 0.3),
   'lets-play': createBeepSound(600, 0.5),
   'suspense': createBeepSound(300, 1.0),
@@ -145,6 +145,8 @@ function createFastForwardSound() {
 export const preloadSounds = () => {
   Object.values(SOUNDS).forEach(audio => {
     audio.load();
+    // Set volume to ensure sounds are audible
+    audio.volume = 0.7;
   });
 };
 
@@ -194,10 +196,10 @@ export const stopFastForwardSound = (): void => {
   activeOscillators['fast-forward'] = [];
 };
 
-// Play a sound effect - now with sounds enabled
+// Play a sound effect - now with sounds enabled by default
 export const playSound = (
-  soundName: 'correct' | 'wrong' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline' | 'fast-forward', 
-  soundEnabled: boolean
+  soundName: 'correct-answer' | 'wrong-answer' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline' | 'fast-forward', 
+  soundEnabled: boolean = true
 ): void => {
   if (!soundEnabled) return;
   
@@ -207,6 +209,7 @@ export const playSound = (
     try {
       // Reset the audio to the beginning and play
       sound.currentTime = 0;
+      sound.volume = 0.7; // Ensure audible volume
       sound.play().catch((error) => {
         console.warn(`Could not play sound file for ${soundName}, using fallback:`, error);
         // Use fallback sound if file fails to play
