@@ -222,16 +222,9 @@ export function playSoundWithLogic(
 ): void {
   if (!settings.soundEffects) return;
   
-  // If we're within the first 5 questions and the sound is 'correct', use fast-forward instead
+  // For correct answers in first 5 questions (index 0-4), don't play correct-answer sound
   if (questionLevel !== undefined && questionLevel < 5 && soundName === 'correct') {
-    playSound('fast-forward', settings.soundEffects);
-    
-    // Also show a toast notification for visual feedback
-    toast({
-      title: `Sound Effect`,
-      description: `fast-forward sound playing`,
-      duration: 1000,
-    });
+    // Don't play any sound for correct answers in first 5 questions
     return;
   }
   

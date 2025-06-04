@@ -181,6 +181,13 @@ const GameScreen = ({
     setGameStarted(true);
     // Play lets-play sound when "Start Game" is pressed
     playSound("lets-play", settings.soundEffects);
+    
+    // Start fast-forward sound after lets-play completes (assuming lets-play is ~2 seconds)
+    setTimeout(() => {
+      if (currentQuestionIndex < 5) {
+        playSound("fast-forward", settings.soundEffects);
+      }
+    }, 2000);
   };
 
   const handleAnswer = (selectedIndex: number) => {
@@ -198,10 +205,9 @@ const GameScreen = ({
     const isCorrect = selectedIndex === currentQuestion.correctOptionIndex;
     
     if (isCorrect) {
-      // Play fast-forward for questions 1-5 (index 0-4), correct-answer for questions 6+ (index 5+)
-      if (currentQuestionIndex < 5) {
-        playSound("fast-forward", settings.soundEffects);
-      } else {
+      // For questions 1-5 (index 0-4), don't play any sound for correct answers
+      // For questions 6+ (index 5+), play correct-answer sound
+      if (currentQuestionIndex >= 5) {
         playSound("correct-answer", settings.soundEffects);
       }
       
@@ -227,7 +233,7 @@ const GameScreen = ({
         setDialogOpen(true);
       }, 2000);
     } else {
-      // Play wrong-answer sound for incorrect answers
+      // Play wrong-answer sound for incorrect answers (all questions)
       playSound("wrong-answer", settings.soundEffects);
       
       setTimeout(() => {
@@ -284,7 +290,7 @@ const GameScreen = ({
   const handleUseLifeline = (lifelineId: string, result: any) => {
     setLifelinesUsed({ ...lifelinesUsed, [lifelineId]: true });
     setTotalLifelinesUsedInGame(totalLifelinesUsedInGame + 1);
-    // Play lifeline sound when using any lifeline
+    // Play lifeline sound when using any lifeline (all questions)
     playSound("lifeline", settings.soundEffects);
     
     // Only apply fifty-fifty effect for actual fifty-fifty lifeline
@@ -473,6 +479,9 @@ const GameScreen = ({
   const handleOptionSelect = (optionIndex: number) => {
     setSelectedOption(optionIndex);
     setTimerPaused(true);
+    
+    // Play final-answer sound when selecting an option
+    playSound("final-answer", settings.soundEffects);
   };
 
   const toggleTimerPause = () => {
@@ -509,10 +518,9 @@ const GameScreen = ({
 
   const handleFinalAnswer = () => {
     if (selectedOption !== null && !revealAnswer && gameStarted) {
-      // Play final-answer sound when confirming final answer
-      playSound("final-answer", settings.soundEffects);
+      // Don't play final-answer sound here since it's already played in handleOptionSelect
       
-      // Small delay before processing the answer to let the sound play
+      // Small delay before processing the answer
       setTimeout(() => {
         handleAnswer(selectedOption);
       }, 1000);
