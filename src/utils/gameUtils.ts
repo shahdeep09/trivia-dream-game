@@ -1,5 +1,5 @@
 import { toast } from "@/hooks/use-toast";
-import { playSound, stopAllSounds } from "./soundUtils";
+import { soundManager } from "./sound/SoundManager";
 
 export interface Question {
   id: string;
@@ -223,7 +223,7 @@ export function playSoundWithLogic(
   if (!settings.soundEffects) return;
   
   // First stop all previous sounds
-  stopAllSounds();
+  soundManager.stopAll();
   
   // For correct answers in first 5 questions (index 0-4), don't play correct-answer sound
   if (questionLevel !== undefined && questionLevel < 5 && soundName === 'correct') {
@@ -232,21 +232,10 @@ export function playSoundWithLogic(
   }
   
   // Map the sound names to match the actual sound file names
-  let actualSoundName: 'correct-answer' | 'wrong-answer' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline' | 'fast-forward';
-  
-  switch (soundName) {
-    case 'correct':
-      actualSoundName = 'correct-answer';
-      break;
-    case 'wrong':
-      actualSoundName = 'wrong-answer';
-      break;
-    default:
-      actualSoundName = soundName as any;
-  }
+  let actualSoundName: 'correct-answer' | 'wrong-answer' | 'final-answer' | 'lets-play' | 'win' | 'lifeline' | 'fast-forward' = soundName === 'correct' ? 'correct-answer' : soundName === 'wrong' ? 'wrong-answer' : soundName;
   
   // For all other cases, play the requested sound
-  playSound(actualSoundName, settings.soundEffects);
+  soundManager.play(actualSoundName);
   
   // Also show a toast notification for visual feedback
   toast({
