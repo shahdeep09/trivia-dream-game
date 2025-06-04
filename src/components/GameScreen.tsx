@@ -263,7 +263,7 @@ const GameScreen = ({
 
   const handleTimeUp = () => {
     setGameOver(true);
-    soundManager.handleGameEnd();
+    soundManager.handleTimeUp();
     setDialogMessage(
       `Time's up! You ran out of time.
       You leave with ${formatMoney(cumulativePoints)}`

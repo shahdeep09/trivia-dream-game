@@ -1,3 +1,4 @@
+
 // Centralized Sound Management System
 // Single source of truth for all game audio
 
@@ -190,6 +191,12 @@ class SoundManager {
       this.stopAll();
       this.play('wrong-answer');
     }
+  }
+
+  public handleTimeUp(): void {
+    // Stop all sounds and play wrong-answer when time runs out
+    this.stopAll();
+    this.play('wrong-answer');
   }
 
   public handleQuestionTransition(questionIndex: number): void {
