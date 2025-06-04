@@ -216,7 +216,7 @@ export function askTheAudience(question: Question): number[] {
 
 // Enhanced play sound function with fast-forward logic
 export function playSoundWithLogic(
-  soundName: 'correct' | 'wrong' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline' | 'fast-forward',
+  soundName: 'correct' | 'wrong' | 'final-answer' | 'lets-play' | 'win' | 'lifeline' | 'fast-forward',
   settings: GameSettings,
   questionLevel?: number
 ): void {
