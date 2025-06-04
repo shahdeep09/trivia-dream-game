@@ -180,9 +180,7 @@ const GameScreen = ({
     
     // Start fast-forward sound after lets-play completes (assuming lets-play is ~2 seconds)
     setTimeout(() => {
-      if (currentQuestionIndex < 5) {
-        playSound("fast-forward", currentSettings.soundEffects);
-      }
+      playSound("fast-forward", currentSettings.soundEffects);
     }, 2000);
   };
 
@@ -204,7 +202,7 @@ const GameScreen = ({
     const isCorrect = selectedIndex === currentQuestion.correctOptionIndex;
     
     if (isCorrect) {
-      // For questions 1-5 (index 0-4), don't play any sound for correct answers
+      // For questions 1-5 (index 0-4), don't play correct-answer sound
       // For questions 6+ (index 5+), play correct-answer sound
       if (currentQuestionIndex >= 5) {
         playSound("correct-answer", currentSettings.soundEffects);
@@ -234,10 +232,6 @@ const GameScreen = ({
         setDialogOpen(true);
       }, 2000);
     } else {
-      // Only stop fast-forward sound for questions 6+ when wrong answer is given
-      if (currentQuestionIndex >= 5) {
-        stopFastForwardSound();
-      }
       // Play wrong-answer sound for incorrect answers (all questions)
       playSound("wrong-answer", currentSettings.soundEffects);
       
@@ -274,14 +268,15 @@ const GameScreen = ({
       const nextQuestionIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextQuestionIndex);
       
+      // Stop fast-forward sound after question 5 (when moving to question 6, index 5)
+      if (nextQuestionIndex === 5) {
+        stopFastForwardSound();
+      }
+      
       // For questions 6+ (index 5+), play lets-play sound when displaying next question
       if (nextQuestionIndex >= 5) {
-        // Stop fast-forward sound first (only for questions 6+)
-        stopFastForwardSound();
-        // Play lets-play sound for questions 6 onwards
         playSound("lets-play", currentSettings.soundEffects);
       }
-      // Note: No need to stop fast-forward for questions 1-5, let it continue playing
       
       setRevealAnswer(false);
       setShowResult(false);
@@ -293,10 +288,6 @@ const GameScreen = ({
 
   const handleTimeUp = () => {
     setGameOver(true);
-    // Only stop fast-forward sound for questions 6+ when time is up
-    if (currentQuestionIndex >= 5) {
-      stopFastForwardSound();
-    }
     // Stop lifeline sound when time is up
     stopLifelineSound();
     setDialogMessage(
@@ -491,10 +482,6 @@ const GameScreen = ({
 
   const handleWalkAway = () => {
     setGameOver(true);
-    // Only stop fast-forward sound for questions 6+ when walking away
-    if (currentQuestionIndex >= 5) {
-      stopFastForwardSound();
-    }
     // Stop lifeline sound when walking away
     stopLifelineSound();
     setDialogMessage(
@@ -522,10 +509,6 @@ const GameScreen = ({
   };
 
   const toggleTimerPause = () => {
-    // Only stop fast-forward sound for questions 6+ when timer is paused
-    if (!timerPaused && currentQuestionIndex >= 5) {
-      stopFastForwardSound();
-    }
     setTimerPaused(!timerPaused);
   };
 
