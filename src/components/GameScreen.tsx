@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
-import { playSound, stopFastForwardSound, stopLifelineSound, stopAllSounds, stopSuspenseSound } from "@/utils/soundUtils";
+import { soundManager } from "@/utils/sound/SoundManager";
 import Question from "./Question";
 import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -175,13 +175,10 @@ const GameScreen = ({
   
   const handleStartGame = () => {
     setGameStarted(true);
-    // Play lets-play sound when "Start Game" is pressed
-    playSound("lets-play", currentSettings.soundEffects);
     
-    // Start fast-forward sound after lets-play completes (assuming lets-play is ~2 seconds)
-    setTimeout(() => {
-      playSound("fast-forward", currentSettings.soundEffects);
-    }, 2000);
+    // Use new centralized sound system
+    soundManager.handleGameStart();
+    soundManager.handleFastForwardStart();
   };
 
   const handleAnswer = (selectedIndex: number) => {
@@ -189,9 +186,6 @@ const GameScreen = ({
     setRevealAnswer(true);
     setShowResult(true);
     setTimerPaused(true);
-    
-    // Stop lifeline sound when answer is given
-    stopLifelineSound();
     
     const answerAction: GameAction = {
       type: 'ANSWER',
@@ -201,13 +195,10 @@ const GameScreen = ({
     
     const isCorrect = selectedIndex === currentQuestion.correctOptionIndex;
     
+    // Handle sound result using centralized system
+    soundManager.handleAnswerResult(isCorrect, currentQuestionIndex);
+    
     if (isCorrect) {
-      // For questions 1-5 (index 0-4), don't play correct-answer sound
-      // For questions 6+ (index 5+), play correct-answer sound
-      if (currentQuestionIndex >= 5) {
-        playSound("correct-answer", currentSettings.soundEffects);
-      }
-      
       const newCumulativePoints = cumulativePoints + currentQuestion.value;
       setCumulativePoints(newCumulativePoints);
       setMoneyWon(newCumulativePoints);
@@ -216,10 +207,7 @@ const GameScreen = ({
         if (currentQuestionIndex === gameQuestions.length - 1) {
           setGameWon(true);
           setGameOver(true);
-          // Stop fast-forward sound when game ends
-          stopFastForwardSound();
-          // Play win sound when winning the entire game
-          playSound("win", currentSettings.soundEffects);
+          soundManager.handleWin();
           setShowConfetti(true);
           setDialogMessage(`Congratulations! You've won ${formatMoney(newCumulativePoints)}!`);
         } else {
@@ -232,9 +220,6 @@ const GameScreen = ({
         setDialogOpen(true);
       }, 2000);
     } else {
-      // Play wrong-answer sound for incorrect answers (all questions)
-      playSound("wrong-answer", currentSettings.soundEffects);
-      
       setTimeout(() => {
         setGameOver(true);
         setDialogMessage(
@@ -256,9 +241,6 @@ const GameScreen = ({
     setDialogOpen(false);
     setShowExplanation(false);
     
-    // Stop lifeline sound when moving to next question
-    stopLifelineSound();
-    
     if (gameOver) {
       setResultDialogOpen(true);
       return;
@@ -268,15 +250,8 @@ const GameScreen = ({
       const nextQuestionIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextQuestionIndex);
       
-      // Stop fast-forward sound after question 5 (when moving to question 6, index 5)
-      if (nextQuestionIndex === 5) {
-        stopFastForwardSound();
-      }
-      
-      // For questions 6+ (index 5+), play lets-play sound when displaying next question
-      if (nextQuestionIndex >= 5) {
-        playSound("lets-play", currentSettings.soundEffects);
-      }
+      // Handle question transition sounds
+      soundManager.handleQuestionTransition(nextQuestionIndex);
       
       setRevealAnswer(false);
       setShowResult(false);
@@ -288,8 +263,7 @@ const GameScreen = ({
 
   const handleTimeUp = () => {
     setGameOver(true);
-    // Stop lifeline sound when time is up
-    stopLifelineSound();
+    soundManager.handleGameEnd();
     setDialogMessage(
       `Time's up! You ran out of time.
       You leave with ${formatMoney(cumulativePoints)}`
@@ -306,8 +280,9 @@ const GameScreen = ({
   const handleUseLifeline = (lifelineId: string, result: any) => {
     setLifelinesUsed({ ...lifelinesUsed, [lifelineId]: true });
     setTotalLifelinesUsedInGame(totalLifelinesUsedInGame + 1);
-    // Play lifeline sound when using any lifeline (all questions)
-    playSound("lifeline", currentSettings.soundEffects);
+    
+    // Use centralized sound system for lifeline
+    soundManager.handleLifelineUsed();
     
     // Only apply fifty-fifty effect for actual fifty-fifty lifeline
     if (lifelineId === "fifty-fifty" && result) {
@@ -416,8 +391,7 @@ const GameScreen = ({
     setResultDialogOpen(false);
     setShowConfetti(false);
     
-    // Stop all sounds when game ends
-    stopAllSounds();
+    soundManager.handleGameEnd();
 
     console.log('Game ending, saving points. TeamId:', teamId, 'Points:', cumulativePoints);
 
@@ -482,8 +456,7 @@ const GameScreen = ({
 
   const handleWalkAway = () => {
     setGameOver(true);
-    // Stop lifeline sound when walking away
-    stopLifelineSound();
+    soundManager.handleWalkAway();
     setDialogMessage(
       `You've decided to walk away with ${formatMoney(cumulativePoints)}.
        The correct answer was ${currentQuestion.options[currentQuestion.correctOptionIndex]}.`
@@ -501,23 +474,21 @@ const GameScreen = ({
     setSelectedOption(optionIndex);
     setTimerPaused(true);
     
-    // Stop lifeline sound when option is selected
-    stopLifelineSound();
-    
-    // Play final-answer sound when selecting an option
-    playSound("final-answer", currentSettings.soundEffects);
+    // Use centralized sound system
+    soundManager.handleOptionSelected();
   };
 
   const toggleTimerPause = () => {
+    if (!timerPaused) {
+      soundManager.handlePause();
+    }
     setTimerPaused(!timerPaused);
   };
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
-    if (!isMuted) {
-      // If muting, stop all sounds
-      stopAllSounds();
-    }
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
+    soundManager.setMuted(newMutedState);
   };
 
   const handleUndo = () => {
@@ -550,8 +521,8 @@ const GameScreen = ({
 
   const handleFinalAnswer = () => {
     if (selectedOption !== null && !revealAnswer && gameStarted) {
-      // Stop final-answer sound when final answer is given
-      stopAllSounds();
+      // Use centralized sound system
+      soundManager.handleFinalAnswerClicked();
       
       // Small delay before processing the answer
       setTimeout(() => {
