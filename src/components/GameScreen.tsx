@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
-import { soundManager } from "@/utils/sound/SoundManager";
+import { Question as QuestionType, Team, GameAction, GameSettings } from "@/utils/game/types";
+import { DEFAULT_GAME_SETTINGS, POINTS_VALUES, MILESTONE_VALUES } from "@/utils/game/constants";
+import { formatMoney, getGuaranteedMoney, shuffleOptions, getQuestionConfig } from "@/utils/game/questionUtils";
+import { addGameAction, undoLastAction } from "@/utils/game/actionHistory";
+import { soundManager } from "@/utils/sound/RefactoredSoundManager";
 import Question from "./Question";
 import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
