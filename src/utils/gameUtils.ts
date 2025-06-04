@@ -1,5 +1,5 @@
 import { toast } from "@/hooks/use-toast";
-import { soundManager } from "./sound/SoundManager";
+import { soundManager } from "./sound/RefactoredSoundManager";
 
 export interface Question {
   id: string;
