@@ -12,6 +12,7 @@ class SoundManager {
   private sounds: Record<string, SoundConfig> = {};
   private currentlyPlaying: Set<string> = new Set();
   private isMuted: boolean = false;
+  private suspenseTimeout: number | null = null;
 
   constructor() {
     this.initializeSounds();
@@ -25,6 +26,7 @@ class SoundManager {
       'correct-answer': '/sounds/correct-answer.mp3.mp3',
       'wrong-answer': '/sounds/wrong-answer.mp3.mp3',
       'lifeline': '/sounds/lifeline.mp3.mp3',
+      'suspense': '/sounds/suspense.mp3.mp3',
       'win': '/sounds/win.mp3.mp3'
     };
 
@@ -87,6 +89,12 @@ class SoundManager {
       this.stop(soundName);
     });
     this.currentlyPlaying.clear();
+    
+    // Clear any pending suspense timeout
+    if (this.suspenseTimeout) {
+      clearTimeout(this.suspenseTimeout);
+      this.suspenseTimeout = null;
+    }
   }
 
   public isPlaying(soundName: string): boolean {
@@ -125,8 +133,15 @@ class SoundManager {
   }
 
   public handleAnswerResult(isCorrect: boolean, questionIndex: number): void {
-    // Stop final-answer sound when result is shown
+    // Stop final-answer and suspense sounds when result is shown
     this.stop('final-answer');
+    this.stop('suspense');
+    
+    // Clear any pending suspense timeout
+    if (this.suspenseTimeout) {
+      clearTimeout(this.suspenseTimeout);
+      this.suspenseTimeout = null;
+    }
     
     if (isCorrect) {
       // Only play correct-answer for questions 6+ (index 5+)
@@ -157,7 +172,15 @@ class SoundManager {
   }
 
   public handleFinalAnswerClicked(): void {
+    // Play final-answer immediately
     this.play('final-answer');
+    
+    // Set timeout to play suspense after 5 seconds
+    this.suspenseTimeout = window.setTimeout(() => {
+      if (!this.isMuted) {
+        this.play('suspense');
+      }
+    }, 5000);
   }
 
   public handleGameEnd(): void {

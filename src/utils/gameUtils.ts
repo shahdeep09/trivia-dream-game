@@ -216,7 +216,7 @@ export function askTheAudience(question: Question): number[] {
 
 // Enhanced play sound function with fast-forward logic
 export function playSoundWithLogic(
-  soundName: 'correct' | 'wrong' | 'final-answer' | 'lets-play' | 'win' | 'lifeline' | 'fast-forward',
+  soundName: 'correct' | 'wrong' | 'final-answer' | 'lets-play' | 'win' | 'lifeline' | 'fast-forward' | 'suspense',
   settings: GameSettings,
   questionLevel?: number
 ): void {
@@ -232,7 +232,7 @@ export function playSoundWithLogic(
   }
   
   // Map the sound names to match the actual sound file names
-  let actualSoundName: 'correct-answer' | 'wrong-answer' | 'final-answer' | 'lets-play' | 'win' | 'lifeline' | 'fast-forward' = soundName === 'correct' ? 'correct-answer' : soundName === 'wrong' ? 'wrong-answer' : soundName;
+  let actualSoundName: 'correct-answer' | 'wrong-answer' | 'final-answer' | 'lets-play' | 'win' | 'lifeline' | 'fast-forward' | 'suspense' = soundName === 'correct' ? 'correct-answer' : soundName === 'wrong' ? 'wrong-answer' : soundName;
   
   // For all other cases, play the requested sound
   soundManager.play(actualSoundName);
