@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { GameSettings } from "@/utils/gameUtils";
 import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
@@ -9,17 +9,20 @@ interface TimerProps {
   onTimeUp: () => void;
   settings: GameSettings;
   isPaused?: boolean;
+  timeLimit?: number;
 }
 
-const Timer = ({ isActive, onTimeUp, settings, isPaused = false }: TimerProps) => {
-  const [timeLeft, setTimeLeft] = useState(settings.timePerQuestion);
+const Timer = ({ isActive, onTimeUp, settings, isPaused = false, timeLimit }: TimerProps) => {
+  const [timeLeft, setTimeLeft] = useState(timeLimit || settings.timePerQuestion);
+  const hasCalledTimeUp = useRef(false);
 
   useEffect(() => {
     // Reset timer when question changes
     if (isActive) {
-      setTimeLeft(settings.timePerQuestion);
+      setTimeLeft(timeLimit || settings.timePerQuestion);
+      hasCalledTimeUp.current = false;
     }
-  }, [isActive, settings.timePerQuestion]);
+  }, [isActive, settings.timePerQuestion, timeLimit]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -28,11 +31,12 @@ const Timer = ({ isActive, onTimeUp, settings, isPaused = false }: TimerProps) =
       interval = setInterval(() => {
         setTimeLeft((prevTime) => {
           const newTime = prevTime - 1;
-          if (newTime <= 0) {
+          if (newTime <= 0 && !hasCalledTimeUp.current) {
+            hasCalledTimeUp.current = true;
             clearInterval(interval);
             onTimeUp();
           }
-          return newTime;
+          return Math.max(0, newTime);
         });
       }, 1000);
     }

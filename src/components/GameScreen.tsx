@@ -240,6 +240,7 @@ const GameScreen = ({
   const handleNextQuestion = () => {
     setDialogOpen(false);
     setShowExplanation(false);
+    setTimeUpCalled(false); // Reset for next question
     
     if (gameOver) {
       setResultDialogOpen(true);
@@ -262,6 +263,9 @@ const GameScreen = ({
   };
 
   const handleTimeUp = () => {
+    if (timeUpCalled) return; // Prevent multiple calls
+    
+    setTimeUpCalled(true);
     setGameOver(true);
     soundManager.handleTimeUp();
     setDialogMessage(
