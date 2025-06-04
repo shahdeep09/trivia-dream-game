@@ -1,9 +1,8 @@
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Question, GameSettings } from "@/utils/game/types";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+
+import { useState } from "react";
+import { GameSettings, Question, applyFiftyFifty, phoneAFriend, askTheAudience } from "@/utils/gameUtils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from "lucide-react";
 import { QuizConfig } from "@/types/quiz";
 
 interface LifelineProps {
@@ -17,229 +16,146 @@ interface LifelineProps {
 
 const Lifeline = ({ lifelineId, isUsed, onUse, currentQuestion, settings, quizConfig }: LifelineProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [pollResults, setPollResults] = useState<number[]>([]);
-  const [expertAnswer, setExpertAnswer] = useState<string>("");
-  const [diceResult, setDiceResult] = useState<number | null>(null);
-
-  const getLifelineIcon = () => {
-    switch (lifelineId) {
-      case "fifty-fifty":
-        return "50:50";
-      case "audience-poll":
-        return "👥";
-      case "ask-expert":
-        return "👨‍🎓";
-      case "roll-dice":
-        return "🎲";
-      default:
-        return "?";
-    }
-  };
+  const [audienceResults, setAudienceResults] = useState<number[]>([]);
+  const [friendResponse, setFriendResponse] = useState("");
 
   const getLifelineName = () => {
     switch (lifelineId) {
       case "fifty-fifty":
         return "50:50";
-      case "audience-poll":
-        return "Audience Poll";
+      case "phone-friend":
+        return "Phone a Friend";
+      case "ask-audience":
+        return "Ask the Audience";
       case "ask-expert":
         return "Ask the Expert";
+      case "audience-poll":
+        return "Audience Poll";
       case "roll-dice":
         return "Roll the Dice";
       default:
-        return "Lifeline";
+        return lifelineId;
+    }
+  };
+
+  const getLifelineIcon = () => {
+    switch (lifelineId) {
+      case "fifty-fifty":
+        return (
+          <div className="text-sm text-center">
+            <span className="block">50</span>
+            <span className="block">50</span>
+          </div>
+        );
+      case "phone-friend":
+        return "📞";
+      case "ask-audience":
+        return "👥";
+      case "ask-expert":
+        return "👨‍🎓";
+      case "audience-poll":
+        return "📊";
+      case "roll-dice":
+        const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
+        const randomDice = diceIcons[Math.floor(Math.random() * diceIcons.length)];
+        const DiceIcon = randomDice;
+        return <DiceIcon size={20} />;
+      default:
+        return "❓";
     }
   };
 
   const handleUseLifeline = () => {
     if (isUsed) return;
 
+    let result;
+    
     switch (lifelineId) {
       case "fifty-fifty":
-        useFiftyFifty();
+        // Standard 50:50 - remove two wrong answers
+        result = applyFiftyFifty(currentQuestion);
+        onUse(lifelineId, result);
         break;
-      case "audience-poll":
-        useAudiencePoll();
+        
+      case "phone-friend":
+        // Standard Phone a Friend - show dialog
+        result = phoneAFriend(currentQuestion);
+        setFriendResponse(result);
         setDialogOpen(true);
+        onUse(lifelineId, result);
         break;
+        
+      case "ask-audience":
+        // Standard Ask the Audience - show dialog
+        result = askTheAudience(currentQuestion);
+        setAudienceResults(result);
+        setDialogOpen(true);
+        onUse(lifelineId, result);
+        break;
+        
       case "ask-expert":
-        useAskExpert();
-        setDialogOpen(true);
-        break;
+      case "audience-poll":
       case "roll-dice":
-        useRollDice();
-        setDialogOpen(true);
+        // Custom lifelines - just mark as used, no popup
+        result = null;
+        onUse(lifelineId, result);
+        break;
+        
+      default:
+        result = null;
+        onUse(lifelineId, result);
         break;
     }
   };
 
-  const useFiftyFifty = () => {
-    const correctIndex = currentQuestion.correctOptionIndex;
-    const wrongIndices = currentQuestion.options
-      .map((_, index) => index)
-      .filter(index => index !== correctIndex);
-    
-    // Randomly select two wrong options to remove
-    const shuffledWrongIndices = [...wrongIndices].sort(() => Math.random() - 0.5);
-    const indicesToRemove = shuffledWrongIndices.slice(0, 2);
-    
-    onUse(lifelineId, indicesToRemove);
-  };
-
-  const useAudiencePoll = () => {
-    const correctIndex = currentQuestion.correctOptionIndex;
-    const numOptions = currentQuestion.options.length;
-    
-    // Generate realistic audience poll results
-    // Correct answer gets 45-75% of votes, others split the rest
-    const correctPercentage = Math.floor(Math.random() * 30) + 45;
-    let remainingPercentage = 100 - correctPercentage;
-    
-    const results = Array(numOptions).fill(0);
-    
-    // Assign the correct percentage to the correct answer
-    results[correctIndex] = correctPercentage;
-    
-    // Distribute remaining percentage among wrong answers
-    const wrongIndices = Array.from({ length: numOptions }, (_, i) => i).filter(i => i !== correctIndex);
-    
-    for (let i = 0; i < wrongIndices.length - 1; i++) {
-      const wrongPercentage = Math.floor(Math.random() * remainingPercentage);
-      results[wrongIndices[i]] = wrongPercentage;
-      remainingPercentage -= wrongPercentage;
-    }
-    
-    // Assign remaining percentage to the last wrong answer
-    results[wrongIndices[wrongIndices.length - 1]] = remainingPercentage;
-    
-    setPollResults(results);
-    onUse(lifelineId, results);
-  };
-
-  const useAskExpert = () => {
-    const correctIndex = currentQuestion.correctOptionIndex;
-    const correctAnswer = currentQuestion.options[correctIndex];
-    
-    // 80% chance the expert is correct
-    const isExpertCorrect = Math.random() < 0.8;
-    
-    let expertResponse;
-    if (isExpertCorrect) {
-      expertResponse = `I'm quite confident the answer is ${correctAnswer}. The reasoning is...`;
-    } else {
-      // Expert gives wrong answer
-      const wrongIndices = currentQuestion.options
-        .map((_, index) => index)
-        .filter(index => index !== correctIndex);
-      const randomWrongIndex = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
-      const wrongAnswer = currentQuestion.options[randomWrongIndex];
-      
-      expertResponse = `I believe the answer is ${wrongAnswer}, but I'm not 100% certain.`;
-    }
-    
-    setExpertAnswer(expertResponse);
-    onUse(lifelineId, { expertResponse, isCorrect: isExpertCorrect });
-  };
-
-  const useRollDice = () => {
-    // Roll a dice (1-6)
-    const roll = Math.floor(Math.random() * 6) + 1;
-    setDiceResult(roll);
-    
-    // If roll is 5 or 6, reveal correct answer
-    const revealCorrect = roll >= 5;
-    const result = {
-      roll,
-      revealCorrect,
-      correctAnswer: revealCorrect ? currentQuestion.options[currentQuestion.correctOptionIndex] : null
-    };
-    
-    onUse(lifelineId, result);
-  };
-
-  const renderLifelineContent = () => {
+  const renderLifelineDialog = () => {
     switch (lifelineId) {
-      case "audience-poll":
+      case "phone-friend":
         return (
-          <>
-            <DialogHeader>
-              <DialogTitle>Audience Poll Results</DialogTitle>
-              <DialogDescription>
-                Here's how the audience voted:
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-              {currentQuestion.options.map((option, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">{option}</span>
-                    <span className="text-sm font-medium">{pollResults[index]}%</span>
-                  </div>
-                  <Progress value={pollResults[index]} className="h-2" />
-                </div>
-              ))}
-            </div>
-          </>
-        );
-      
-      case "ask-expert":
-        return (
-          <>
-            <DialogHeader>
-              <DialogTitle>Expert Opinion</DialogTitle>
-              <DialogDescription>
-                Our expert has analyzed the question:
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <div className="bg-millionaire-secondary p-4 rounded-md">
-                <p className="italic">"{expertAnswer}"</p>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogContent className="bg-millionaire-primary border-millionaire-accent">
+              <DialogHeader>
+                <DialogTitle>Phone a Friend</DialogTitle>
+              </DialogHeader>
+              <div className="p-4 bg-millionaire-secondary rounded-md mt-2">
+                <p className="italic">"Hello? Yes, I'm watching the show..."</p>
+                <p className="mt-2">{friendResponse}</p>
+                <p className="mt-2 italic">"Sorry, that's all I've got. Good luck!"</p>
               </div>
-              <p className="mt-4 text-sm text-millionaire-light">
-                Remember, experts can sometimes be wrong too!
-              </p>
-            </div>
-          </>
+            </DialogContent>
+          </Dialog>
         );
-      
-      case "roll-dice":
+        
+      case "ask-audience":
         return (
-          <>
-            <DialogHeader>
-              <DialogTitle>Roll the Dice</DialogTitle>
-              <DialogDescription>
-                You rolled:
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-8 flex flex-col items-center">
-              <div className="text-6xl mb-4">
-                {diceResult === 1 && "⚀"}
-                {diceResult === 2 && "⚁"}
-                {diceResult === 3 && "⚂"}
-                {diceResult === 4 && "⚃"}
-                {diceResult === 5 && "⚄"}
-                {diceResult === 6 && "⚅"}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogContent className="bg-millionaire-primary border-millionaire-accent">
+              <DialogHeader>
+                <DialogTitle>Ask the Audience</DialogTitle>
+              </DialogHeader>
+              <div className="p-4 bg-millionaire-secondary rounded-md mt-2">
+                <p className="mb-4">The audience voted:</p>
+                <div className="flex justify-between items-end h-40 gap-4">
+                  {audienceResults.map((percent, index) => (
+                    <div key={index} className="flex flex-col items-center flex-1">
+                      <div className="w-full bg-millionaire-accent relative">
+                        <div
+                          className="bg-millionaire-gold transition-all duration-1000 ease-out"
+                          style={{ height: `${percent}%`, width: '100%' }}
+                        ></div>
+                      </div>
+                      <div className="mt-2">
+                        <span className="font-bold">{String.fromCharCode(65 + index)}</span>
+                        <span className="ml-2">{percent}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <p className="text-xl font-bold mb-2">You rolled a {diceResult}!</p>
-              {diceResult && diceResult >= 5 ? (
-                <div className="text-center">
-                  <Badge className="bg-green-500 mb-2">Lucky Roll!</Badge>
-                  <p>The correct answer is:</p>
-                  <p className="text-millionaire-gold font-bold text-xl mt-2">
-                    {currentQuestion.options[currentQuestion.correctOptionIndex]}
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <Badge className="bg-red-500 mb-2">Unlucky!</Badge>
-                  <p>You need to roll a 5 or 6 to reveal the correct answer.</p>
-                  <p className="text-sm mt-2">Better luck next time!</p>
-                </div>
-              )}
-            </div>
-          </>
+            </DialogContent>
+          </Dialog>
         );
-      
+        
       default:
         return null;
     }
@@ -247,33 +163,18 @@ const Lifeline = ({ lifelineId, isUsed, onUse, currentQuestion, settings, quizCo
 
   return (
     <>
-      <Button
-        variant={isUsed ? "outline" : "default"}
-        className={`w-16 h-16 rounded-full flex items-center justify-center text-lg font-bold ${
-          isUsed 
-            ? "bg-gray-700 text-gray-400 border-gray-600 opacity-50 cursor-not-allowed" 
-            : "bg-millionaire-accent hover:bg-millionaire-gold hover:text-millionaire-primary"
-        }`}
+      <button
+        className={`w-16 h-16 rounded-full border-2 border-millionaire-accent bg-millionaire-primary flex flex-col items-center justify-center ${isUsed ? "opacity-50" : "hover:bg-millionaire-secondary transition-colors"}`}
         onClick={handleUseLifeline}
         disabled={isUsed}
         title={getLifelineName()}
       >
-        {getLifelineIcon()}
-      </Button>
-      
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-millionaire-primary border-millionaire-accent">
-          {renderLifelineContent()}
-          <DialogFooter>
-            <Button 
-              onClick={() => setDialogOpen(false)}
-              className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <span className="text-lg mb-0.5">{getLifelineIcon()}</span>
+        <span className="text-xs mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis w-full text-center px-1">
+          {getLifelineName()}
+        </span>
+      </button>
+      {renderLifelineDialog()}
     </>
   );
 };

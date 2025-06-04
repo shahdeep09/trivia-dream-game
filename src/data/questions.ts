@@ -1,6 +1,5 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { Question } from '../utils/game/types';
+import { Question } from "../utils/gameUtils";
 
 // 15 General Knowledge Questions for the game
 export const SAMPLE_QUESTIONS: Question[] = [

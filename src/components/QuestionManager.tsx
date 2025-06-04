@@ -1,15 +1,15 @@
-import React, { useState } from "react";
+
+import { useState } from "react";
+import { Question } from "@/utils/gameUtils";
 import { Button } from "@/components/ui/button";
-import { Question } from "@/utils/game/types";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Trash2, Edit, Plus, Play } from "lucide-react";
+import { Trash2, Edit, Plus } from "lucide-react";
 
 interface QuestionManagerProps {
   questions: Question[];
@@ -201,10 +201,6 @@ const QuestionManager = ({
           <DialogHeader>
             <DialogTitle>{editingQuestion ? "Edit Question" : "Add New Question"}</DialogTitle>
           </DialogHeader>
-          
-          <DialogDescription>
-            {editingQuestion ? "Edit the existing question" : "Add a new question to the bank"}
-          </DialogDescription>
           
           <div className="space-y-4">
             <div className="space-y-2">

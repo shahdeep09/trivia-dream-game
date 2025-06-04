@@ -1,6 +1,6 @@
 
 import { TabsContent } from "@/components/ui/tabs";
-import { Team } from "@/utils/game/types";
+import { Team } from "@/utils/gameUtils";
 import TeamCard from "./TeamCard";
 
 interface TeamsTabProps {
