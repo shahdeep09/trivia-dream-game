@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import { soundManager } from "@/utils/sound/SoundManager";
@@ -58,6 +59,7 @@ const GameScreen = ({
   const [gameStarted, setGameStarted] = useState(false);
   const [teamName, setTeamName] = useState<string>("");
   const [isMuted, setIsMuted] = useState(false);
+  const [timeUpCalled, setTimeUpCalled] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const windowSize = useWindowSize();
