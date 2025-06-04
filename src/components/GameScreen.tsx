@@ -474,8 +474,8 @@ const GameScreen = ({
     setSelectedOption(optionIndex);
     setTimerPaused(true);
     
-    // Use centralized sound system
-    soundManager.handleOptionSelected();
+    // Use centralized sound system - pass questionIndex for proper logic
+    soundManager.handleOptionSelected(currentQuestionIndex);
   };
 
   const toggleTimerPause = () => {
@@ -521,9 +521,7 @@ const GameScreen = ({
 
   const handleFinalAnswer = () => {
     if (selectedOption !== null && !revealAnswer && gameStarted) {
-      // Use centralized sound system with question index for proper logic
-      soundManager.handleFinalAnswerClicked(currentQuestionIndex);
-      
+      // No longer need to play final-answer here since it's handled by handleOptionSelected
       // Small delay before processing the answer
       setTimeout(() => {
         handleAnswer(selectedOption);

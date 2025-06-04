@@ -1,4 +1,3 @@
-
 // Centralized Sound Management System
 // Single source of truth for all game audio
 
@@ -127,9 +126,35 @@ class SoundManager {
     }, 2000);
   }
 
-  public handleOptionSelected(): void {
+  public handleOptionSelected(questionIndex: number): void {
     // Stop lifeline sound when option is selected
     this.stop('lifeline');
+    
+    // For questions 6+ (index 5+), start the final-answer + suspense sequence
+    if (questionIndex >= 5) {
+      this.handleFinalAnswerSequence();
+    }
+  }
+
+  private handleFinalAnswerSequence(): void {
+    // Clear any existing timeout first
+    if (this.suspenseTimeout) {
+      clearTimeout(this.suspenseTimeout);
+      this.suspenseTimeout = null;
+    }
+    
+    // Play final-answer immediately
+    this.play('final-answer');
+    
+    // Set timeout to transition to suspense after 5 seconds
+    this.suspenseTimeout = window.setTimeout(() => {
+      if (!this.isMuted && this.isPlaying('final-answer')) {
+        // Stop final-answer cleanly and play suspense
+        this.stop('final-answer');
+        this.play('suspense');
+      }
+      this.suspenseTimeout = null;
+    }, 5000);
   }
 
   public handleAnswerResult(isCorrect: boolean, questionIndex: number): void {
@@ -172,33 +197,10 @@ class SoundManager {
   }
 
   public handleFinalAnswerClicked(questionIndex: number): void {
-    // Only apply final-answer + suspense logic for Q6+ (normal-paced round)
-    if (questionIndex >= 5) {
-      // Clear any existing timeout first
-      if (this.suspenseTimeout) {
-        clearTimeout(this.suspenseTimeout);
-        this.suspenseTimeout = null;
-      }
-      
-      // Stop all sounds to ensure clean transition
-      this.stopAll();
-      
-      // Play final-answer immediately
-      this.play('final-answer');
-      
-      // Set timeout to transition to suspense after 5 seconds
-      this.suspenseTimeout = window.setTimeout(() => {
-        if (!this.isMuted && this.isPlaying('final-answer')) {
-          // Stop final-answer cleanly and play suspense
-          this.stop('final-answer');
-          this.play('suspense');
-        }
-        this.suspenseTimeout = null;
-      }, 5000);
-    } else {
-      // For Q1-5, just play final-answer normally
-      this.play('final-answer');
-    }
+    // This method is no longer used for the final-answer sound logic
+    // The sound is now triggered by handleOptionSelected instead
+    // Keeping this method for backward compatibility but making it a no-op
+    console.log('handleFinalAnswerClicked called but final-answer logic moved to handleOptionSelected');
   }
 
   public handleGameEnd(): void {
