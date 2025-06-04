@@ -1,3 +1,4 @@
+
 // Sound utility functions for the game
 
 // Sound file mapping - updated to match uploaded files
@@ -238,12 +239,15 @@ export const stopAllSounds = (): void => {
   });
 };
 
-// Play a sound effect - now with sounds enabled by default
+// Play a sound effect - now with sounds enabled by default and stopping previous sounds
 export const playSound = (
   soundName: 'correct-answer' | 'wrong-answer' | 'final-answer' | 'lets-play' | 'suspense' | 'win' | 'lifeline' | 'fast-forward', 
   soundEnabled: boolean = true
 ): void => {
   if (!soundEnabled) return;
+  
+  // Stop all other sounds before playing the new one
+  stopAllSounds();
   
   const sound = SOUNDS[soundName];
   
