@@ -12,6 +12,7 @@ class SoundManager {
   private currentlyPlaying: Set<string> = new Set();
   private isMuted: boolean = false;
   private suspenseTimeout: number | null = null;
+  private lifelineTimeout: number | null = null;
 
   constructor() {
     this.initializeSounds();
@@ -89,10 +90,15 @@ class SoundManager {
     });
     this.currentlyPlaying.clear();
     
-    // Clear any pending suspense timeout
+    // Clear any pending timeouts
     if (this.suspenseTimeout) {
       clearTimeout(this.suspenseTimeout);
       this.suspenseTimeout = null;
+    }
+    
+    if (this.lifelineTimeout) {
+      clearTimeout(this.lifelineTimeout);
+      this.lifelineTimeout = null;
     }
   }
 
@@ -129,6 +135,12 @@ class SoundManager {
   public handleOptionSelected(questionIndex: number): void {
     // Stop lifeline sound when option is selected
     this.stop('lifeline');
+    
+    // Clear any pending lifeline timeout
+    if (this.lifelineTimeout) {
+      clearTimeout(this.lifelineTimeout);
+      this.lifelineTimeout = null;
+    }
     
     // For questions 6+ (index 5+), start the final-answer + suspense sequence
     if (questionIndex >= 5) {
@@ -189,6 +201,14 @@ class SoundManager {
     // Play lets-play for questions 6+ (index 5+)
     if (questionIndex >= 5) {
       this.play('lets-play');
+      
+      // Start lifeline sound after lets-play completes (2 second delay)
+      this.lifelineTimeout = window.setTimeout(() => {
+        if (!this.isMuted) {
+          this.play('lifeline');
+        }
+        this.lifelineTimeout = null;
+      }, 2000);
     }
   }
 
