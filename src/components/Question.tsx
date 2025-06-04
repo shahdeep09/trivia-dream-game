@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Question as QuestionType, GameSettings } from "@/utils/game/types";
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,7 @@ const Question = ({
         timeLimit={timeLimit}
         onTimeUp={onTimeUp}
         timerPaused={timerPaused}
-        setTimeRemaining={setTimeRemaining}
+        settings={settings}
       />
       
       <Progress value={(timeLimit - timeRemaining) / timeLimit * 100} className="w-full max-w-md mb-6" />

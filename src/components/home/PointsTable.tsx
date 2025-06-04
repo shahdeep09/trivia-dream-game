@@ -1,16 +1,21 @@
+
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Award } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Trophy, Medal, Award, Save } from "lucide-react";
 import { Team } from "@/utils/game/types";
 
 interface PointsTableProps {
   teams: Team[];
   calculateTotalPoints: (team: Team) => number;
+  handleBonusPointsChange: (teamId: string, value: string) => void;
+  saveBonusPoints: (teamId: string) => Promise<void>;
 }
 
-const PointsTable = ({ teams, calculateTotalPoints }: PointsTableProps) => {
+const PointsTable = ({ teams, calculateTotalPoints, handleBonusPointsChange, saveBonusPoints }: PointsTableProps) => {
   // Sort teams by total points in descending order
   const sortedTeams = [...teams].sort((a, b) => calculateTotalPoints(b) - calculateTotalPoints(a));
 
@@ -27,8 +32,11 @@ const PointsTable = ({ teams, calculateTotalPoints }: PointsTableProps) => {
               <TableHead className="w-[80px]">Rank</TableHead>
               <TableHead>Team</TableHead>
               <TableHead>Games Played</TableHead>
+              <TableHead>Quiz Points</TableHead>
+              <TableHead>Bonus Points</TableHead>
               <TableHead>Total Points</TableHead>
               <TableHead className="text-center">Lifelines Used</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -42,9 +50,28 @@ const PointsTable = ({ teams, calculateTotalPoints }: PointsTableProps) => {
                 </TableCell>
                 <TableCell>{team.name}</TableCell>
                 <TableCell>{team.gamesPlayed}</TableCell>
-                <TableCell>{calculateTotalPoints(team)}</TableCell>
+                <TableCell>{team.points || 0}</TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={team.bonusPoints || 0}
+                    onChange={(e) => handleBonusPointsChange(team.id, e.target.value)}
+                    className="w-20"
+                    min="0"
+                  />
+                </TableCell>
+                <TableCell className="font-semibold">{calculateTotalPoints(team)}</TableCell>
                 <TableCell className="text-center">
                   <Badge variant="secondary">{team.totalLifelinesUsed || 0}</Badge>
+                </TableCell>
+                <TableCell className="text-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => saveBonusPoints(team.id)}
+                  >
+                    <Save className="w-4 h-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

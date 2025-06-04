@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -14,7 +14,8 @@ import TeamsTab from "@/components/home/TeamsTab";
 import PointsTable from "@/components/home/PointsTable";
 import NoQuizConfigured from "@/components/home/NoQuizConfigured";
 import QuizHeader from "@/components/home/QuizHeader";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import UserMenu from "@/components/auth/UserMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { QuizConfig } from "@/types/quiz";
 import { supabase } from "@/integrations/supabase/client";
