@@ -2,7 +2,7 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { preloadSounds } from './utils/sound'
+import { preloadSounds } from './utils/soundUtils'
 
 // Preload sound files when the app starts
 preloadSounds();

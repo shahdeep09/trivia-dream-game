@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
-import { playSound, stopFastForwardSound, stopLifelineSound, stopAllSounds } from "@/utils/sound";
+import { playSound, stopFastForwardSound, stopLifelineSound, stopAllSounds } from "@/utils/soundUtils";
 import Question from "./Question";
 import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
