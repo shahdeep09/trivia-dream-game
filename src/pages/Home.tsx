@@ -15,7 +15,7 @@ import PointsTable from "@/components/home/PointsTable";
 import NoQuizConfigured from "@/components/home/NoQuizConfigured";
 import QuizHeader from "@/components/home/QuizHeader";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import UserMenu from "@/components/auth/UserMenu";
+import { UserMenu } from "@/components/auth/UserMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { QuizConfig } from "@/types/quiz";
 import { supabase } from "@/integrations/supabase/client";
@@ -334,7 +334,6 @@ const Home = () => {
 
           <PointsTable 
             teams={teams}
-            refreshKey={refreshKey}
             calculateTotalPoints={calculateTotalPoints}
             handleBonusPointsChange={handleBonusPointsChange}
             saveBonusPoints={saveBonusPoints}
