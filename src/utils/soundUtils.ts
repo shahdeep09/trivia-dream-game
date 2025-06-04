@@ -217,6 +217,16 @@ export const stopLifelineSound = (): void => {
   activeOscillators['lifeline'] = [];
 };
 
+// Stop the final-answer sound
+export const stopFinalAnswerSound = (): void => {
+  // Stop audio file if playing
+  const sound = SOUNDS['final-answer'];
+  if (sound) {
+    sound.pause();
+    sound.currentTime = 0;
+  }
+};
+
 // Stop all sounds
 export const stopAllSounds = (): void => {
   // Stop all audio files
@@ -244,6 +254,9 @@ export const playSound = (
   soundEnabled: boolean = true
 ): void => {
   if (!soundEnabled) return;
+  
+  // Stop all sounds before playing a new one to ensure only one sound plays at a time
+  stopAllSounds();
   
   const sound = SOUNDS[soundName];
   

@@ -1,5 +1,5 @@
 import { toast } from "@/hooks/use-toast";
-import { playSound } from "./soundUtils";
+import { playSound, stopAllSounds } from "./soundUtils";
 
 export interface Question {
   id: string;
@@ -221,6 +221,9 @@ export function playSoundWithLogic(
   questionLevel?: number
 ): void {
   if (!settings.soundEffects) return;
+  
+  // First stop all previous sounds
+  stopAllSounds();
   
   // For correct answers in first 5 questions (index 0-4), don't play correct-answer sound
   if (questionLevel !== undefined && questionLevel < 5 && soundName === 'correct') {

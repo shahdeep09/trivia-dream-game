@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
-import { playSound, stopFastForwardSound, stopLifelineSound, stopAllSounds } from "@/utils/soundUtils";
+import { playSound, stopFastForwardSound, stopLifelineSound, stopAllSounds, stopSuspenseSound } from "@/utils/soundUtils";
 import Question from "./Question";
 import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -272,9 +272,17 @@ const GameScreen = ({
       const nextQuestionIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextQuestionIndex);
       
-      // Stop fast-forward sound after question 5 (index 4)
+      // For questions 6+ (index 5+), play lets-play sound when displaying next question
       if (nextQuestionIndex >= 5) {
+        // Stop fast-forward sound first
         stopFastForwardSound();
+        // Play lets-play sound for questions 6 onwards
+        playSound("lets-play", currentSettings.soundEffects);
+      } else {
+        // Stop fast-forward sound after question 5 (index 4)
+        if (nextQuestionIndex >= 5) {
+          stopFastForwardSound();
+        }
       }
       
       setRevealAnswer(false);
@@ -504,6 +512,9 @@ const GameScreen = ({
     setSelectedOption(optionIndex);
     setTimerPaused(true);
     
+    // Stop lifeline sound when option is selected
+    stopLifelineSound();
+    
     // Play final-answer sound when selecting an option
     playSound("final-answer", currentSettings.soundEffects);
   };
@@ -554,7 +565,8 @@ const GameScreen = ({
 
   const handleFinalAnswer = () => {
     if (selectedOption !== null && !revealAnswer && gameStarted) {
-      // Don't play final-answer sound here since it's already played in handleOptionSelect
+      // Stop final-answer sound when final answer is given
+      stopAllSounds();
       
       // Small delay before processing the answer
       setTimeout(() => {
