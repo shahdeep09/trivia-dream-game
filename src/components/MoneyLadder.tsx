@@ -19,7 +19,7 @@ const MoneyLadder = ({ currentLevel, quizConfig }: MoneyLadderProps) => {
   // Get the class name for a level
   const getLevelClass = (index: number) => {
     const levelIndex = levels.length - 1 - index; // Convert back to original index
-    let className = "p-1 text-center rounded-md flex justify-between items-center text-xs";
+    let className = "p-1 text-center rounded-md flex justify-between items-center text-xl";
     
     if (levelIndex === currentLevel) {
       className += " bg-millionaire-accent text-millionaire-primary font-bold";
@@ -39,7 +39,7 @@ const MoneyLadder = ({ currentLevel, quizConfig }: MoneyLadderProps) => {
   
   return (
     <div className="bg-millionaire-secondary p-2 rounded-lg shadow-lg h-full">
-      <h2 className="text-base font-bold text-center mb-2 text-millionaire-gold">Points Ladder</h2>
+      <h2 className="text-2xl font-bold text-center mb-2 text-millionaire-gold">Points Ladder</h2>
       <div className="space-y-0.5">
         {reversedLevels.map((level, index) => (
           <div key={index} className={getLevelClass(index)}>
@@ -47,7 +47,7 @@ const MoneyLadder = ({ currentLevel, quizConfig }: MoneyLadderProps) => {
             <span className="flex-1 text-center">
               {level.points} pts
             </span>
-            <span className="w-8 text-center text-xs opacity-75">
+            <span className="w-8 text-center text-xl opacity-75">
               {level.timeLimit}s
             </span>
           </div>
