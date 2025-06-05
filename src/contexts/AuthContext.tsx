@@ -39,13 +39,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
         
-        // Only update state if there's an actual change
+        // Handle all auth events consistently
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           setSession(session);
           setUser(session?.user ?? null);
         } else if (event === 'SIGNED_OUT') {
+          // Ensure complete cleanup on sign out
           setSession(null);
           setUser(null);
+          // Clear any cached auth data
+          localStorage.removeItem('sb-yeuscslngjdjluqssfgi-auth-token');
+        } else if (event === 'USER_UPDATED') {
+          setSession(session);
+          setUser(session?.user ?? null);
         }
         
         setLoading(false);
@@ -86,7 +92,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Force clear local state first to ensure immediate UI update
+      setUser(null);
+      setSession(null);
+      
+      // Then call Supabase signOut
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Sign out error:', error);
+        // Even if there's an error, ensure local state is cleared
+        setUser(null);
+        setSession(null);
+      }
+      
+      // Clear any remaining auth data
+      localStorage.removeItem('sb-yeuscslngjdjluqssfgi-auth-token');
+      
+    } catch (error) {
+      console.error('Sign out failed:', error);
+      // Ensure state is cleared even if sign out fails
+      setUser(null);
+      setSession(null);
+    }
   };
 
   const resetPassword = async (email: string) => {
