@@ -36,9 +36,8 @@ export const useQuizConfig = () => {
 
   const handleNumberOfQuestionsChange = (value: string) => {
     const num = parseInt(value) || 0;
-    if (num > 0 && num <= 20) {
+    if (num >= 0 && num <= 20) {
       setNumberOfQuestions(num);
-      setShowQuestionConfig(true);
     }
   };
 
@@ -62,9 +61,8 @@ export const useQuizConfig = () => {
 
   const handleNumberOfTeamsChange = (value: string) => {
     const num = parseInt(value) || 0;
-    if (num > 0 && num <= 30) {
+    if (num >= 0 && num <= 30) {
       setNumberOfTeams(num);
-      setShowTeamNames(true);
     }
   };
 
@@ -72,6 +70,18 @@ export const useQuizConfig = () => {
     const updatedNames = [...teamNames];
     updatedNames[index] = name;
     setTeamNames(updatedNames);
+  };
+
+  const openQuestionConfig = () => {
+    if (numberOfQuestions > 0 && numberOfQuestions <= 20) {
+      setShowQuestionConfig(true);
+    }
+  };
+
+  const openTeamNames = () => {
+    if (numberOfTeams > 0 && numberOfTeams <= 30) {
+      setShowTeamNames(true);
+    }
   };
 
   return {
@@ -92,6 +102,8 @@ export const useQuizConfig = () => {
     teamNames,
     handleTeamNameUpdate,
     samajName,
-    setSamajName
+    setSamajName,
+    openQuestionConfig,
+    openTeamNames
   };
 };

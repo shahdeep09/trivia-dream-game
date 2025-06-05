@@ -32,7 +32,9 @@ const QuizSetup = () => {
     teamNames,
     handleTeamNameUpdate,
     samajName,
-    setSamajName
+    setSamajName,
+    openQuestionConfig,
+    openTeamNames
   } = useQuizConfig();
 
   const { handleSubmit, loadExistingQuiz } = useQuizSubmission(updateQuizHistory);
@@ -85,6 +87,8 @@ const QuizSetup = () => {
               samajName={samajName}
               onSamajNameChange={setSamajName}
               onSubmit={onSubmit}
+              onOpenQuestionConfig={openQuestionConfig}
+              onOpenTeamNames={openTeamNames}
             />
           </div>
 

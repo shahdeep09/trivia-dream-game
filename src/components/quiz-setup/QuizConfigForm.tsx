@@ -19,6 +19,8 @@ interface QuizConfigFormProps {
   samajName: string;
   onSamajNameChange: (value: string) => void;
   onSubmit: () => void;
+  onOpenQuestionConfig: () => void;
+  onOpenTeamNames: () => void;
 }
 
 export const QuizConfigForm = ({
@@ -32,7 +34,9 @@ export const QuizConfigForm = ({
   onNumberOfTeamsChange,
   samajName,
   onSamajNameChange,
-  onSubmit
+  onSubmit,
+  onOpenQuestionConfig,
+  onOpenTeamNames
 }: QuizConfigFormProps) => {
   return (
     <Card className="bg-millionaire-secondary border-millionaire-accent">
@@ -60,14 +64,24 @@ export const QuizConfigForm = ({
 
         <div className="space-y-2">
           <Label>Number of Questions in the Quiz</Label>
-          <Input
-            type="number"
-            min="1"
-            max="20"
-            value={numberOfQuestions}
-            onChange={(e) => onNumberOfQuestionsChange(e.target.value)}
-            className="bg-millionaire-primary border-millionaire-accent"
-          />
+          <div className="flex items-center space-x-2">
+            <Input
+              type="number"
+              min="1"
+              max="20"
+              value={numberOfQuestions}
+              onChange={(e) => onNumberOfQuestionsChange(e.target.value)}
+              className="bg-millionaire-primary border-millionaire-accent flex-1"
+            />
+            <Button
+              onClick={onOpenQuestionConfig}
+              variant="outline"
+              className="border-millionaire-accent"
+              disabled={numberOfQuestions <= 0 || numberOfQuestions > 20}
+            >
+              Configure Questions
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -91,14 +105,24 @@ export const QuizConfigForm = ({
 
         <div className="space-y-2">
           <Label>Number of Players/Teams</Label>
-          <Input
-            type="number"
-            min="1"
-            max="30"
-            value={numberOfTeams}
-            onChange={(e) => onNumberOfTeamsChange(e.target.value)}
-            className="bg-millionaire-primary border-millionaire-accent"
-          />
+          <div className="flex items-center space-x-2">
+            <Input
+              type="number"
+              min="1"
+              max="30"
+              value={numberOfTeams}
+              onChange={(e) => onNumberOfTeamsChange(e.target.value)}
+              className="bg-millionaire-primary border-millionaire-accent flex-1"
+            />
+            <Button
+              onClick={onOpenTeamNames}
+              variant="outline"
+              className="border-millionaire-accent"
+              disabled={numberOfTeams <= 0 || numberOfTeams > 30}
+            >
+              Configure Teams
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-2">
