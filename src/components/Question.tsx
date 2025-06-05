@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Question as QuestionType, GameSettings } from "@/utils/gameUtils";
 import { Button } from "@/components/ui/button";
@@ -58,7 +59,7 @@ const Question = ({
   }, [timerPaused, revealAnswer, onTimeUp]);
 
   const getOptionClass = (index: number) => {
-    let baseClass = "relative w-full px-8 py-4 text-left text-white font-medium text-lg transition-all duration-300 ";
+    let baseClass = "relative w-full px-8 py-4 text-left text-white font-medium text-3xl transition-all duration-300 ";
     
     if (disabledOptions.includes(index)) {
       return baseClass + "opacity-50 cursor-not-allowed bg-gray-600 border-2 border-yellow-400";
@@ -111,7 +112,7 @@ const Question = ({
         {/* Question */}
         <div className="mb-12">
           <div className="p-6 rounded-lg border-2 border-yellow-400 shadow-lg bg-transparent">
-            <h2 className="text-2xl font-bold text-center text-white leading-relaxed">
+            <h2 className="text-4xl font-bold text-center text-white leading-relaxed">
               {question.text}
             </h2>
           </div>
@@ -133,7 +134,7 @@ const Question = ({
                 }}
               >
                 <div className="flex items-center w-full">
-                  <span className="font-bold text-yellow-300 text-xl mr-4 min-w-[30px]">
+                  <span className="font-bold text-yellow-300 text-3xl mr-4 min-w-[30px]">
                     {letterMapping[index]}:
                   </span>
                   <span className="flex-1 text-left">{option}</span>
