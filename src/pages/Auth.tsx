@@ -1,12 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Auth = () => {
-  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
+  const [searchParams] = useSearchParams();
+  const urlMode = searchParams.get('mode');
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset' | 'change-password'>(() => {
+    if (urlMode === 'change-password') return 'change-password';
+    return 'login';
+  });
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (urlMode === 'change-password') {
+      setMode('change-password');
+    }
+  }, [urlMode]);
 
   if (loading) {
     return (
@@ -16,8 +27,14 @@ const Auth = () => {
     );
   }
 
-  if (user) {
+  // If user is authenticated and not changing password, redirect to home
+  if (user && mode !== 'change-password') {
     return <Navigate to="/" replace />;
+  }
+
+  // If user is not authenticated and trying to change password, redirect to login
+  if (!user && mode === 'change-password') {
+    return <Navigate to="/auth" replace />;
   }
 
   return (

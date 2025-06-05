@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { PasswordChangeForm } from './PasswordChangeForm';
 
 interface AuthFormProps {
-  mode: 'login' | 'signup' | 'reset';
-  onModeChange: (mode: 'login' | 'signup' | 'reset') => void;
+  mode: 'login' | 'signup' | 'reset' | 'change-password';
+  onModeChange: (mode: 'login' | 'signup' | 'reset' | 'change-password') => void;
 }
 
 export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
@@ -21,8 +22,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn, signUp, resetPassword, user } = useAuth();
   const navigate = useNavigate();
+
+  // If user is authenticated and wants to change password, show the password change form
+  if (mode === 'change-password' && user) {
+    return <PasswordChangeForm />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +75,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
       case 'login': return 'Welcome Back';
       case 'signup': return 'Create Account';
       case 'reset': return 'Reset Password';
+      case 'change-password': return 'Change Password';
     }
   };
 
@@ -77,6 +84,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
       case 'login': return 'Sign in to your account to continue';
       case 'signup': return 'Create a new account to get started';
       case 'reset': return 'Enter your email to receive a password reset link';
+      case 'change-password': return 'Enter your new password';
     }
   };
 
