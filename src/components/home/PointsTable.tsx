@@ -47,6 +47,12 @@ const PointsTable = ({
     const localValue = localBonusPoints[teamId] || 0;
     handleBonusPointsChange(teamId, localValue.toString());
     await saveBonusPoints(teamId);
+    
+    // After saving, sync the local state with the saved value
+    setLocalBonusPoints(prev => ({
+      ...prev,
+      [teamId]: localValue
+    }));
   };
 
   // Calculate total points using local bonus points
