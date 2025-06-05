@@ -22,16 +22,14 @@ const PointsTable = ({
 }: PointsTableProps) => {
   const [localBonusPoints, setLocalBonusPoints] = useState<Record<string, number>>({});
 
-  // Initialize local bonus points when teams change, but only if local state is empty
+  // Sync local bonus points with teams data whenever teams change
   useEffect(() => {
-    if (Object.keys(localBonusPoints).length === 0) {
-      const initialBonusPoints: Record<string, number> = {};
-      teams.forEach(team => {
-        initialBonusPoints[team.id] = team.bonusPoints || 0;
-      });
-      setLocalBonusPoints(initialBonusPoints);
-    }
-  }, [teams, localBonusPoints]);
+    const updatedBonusPoints: Record<string, number> = {};
+    teams.forEach(team => {
+      updatedBonusPoints[team.id] = team.bonusPoints || 0;
+    });
+    setLocalBonusPoints(updatedBonusPoints);
+  }, [teams]);
 
   const handleLocalBonusChange = (teamId: string, value: string) => {
     const numValue = parseInt(value) || 0;
@@ -39,25 +37,19 @@ const PointsTable = ({
       ...prev,
       [teamId]: numValue
     }));
-    // Don't call parent handler here - only update local state
   };
 
   const handleSave = async (teamId: string) => {
-    // Update parent state with the local value before saving
     const localValue = localBonusPoints[teamId] || 0;
+    // Update parent state first
     handleBonusPointsChange(teamId, localValue.toString());
+    // Then save to database
     await saveBonusPoints(teamId);
-    
-    // After saving, sync the local state with the saved value
-    setLocalBonusPoints(prev => ({
-      ...prev,
-      [teamId]: localValue
-    }));
   };
 
-  // Calculate total points using local bonus points
+  // Calculate total points using local bonus points for real-time display
   const calculateLocalTotalPoints = (team: Team) => {
-    const localBonus = localBonusPoints[team.id] || team.bonusPoints || 0;
+    const localBonus = localBonusPoints[team.id] !== undefined ? localBonusPoints[team.id] : team.bonusPoints || 0;
     return (team.points || 0) + localBonus;
   };
 
@@ -94,7 +86,7 @@ const PointsTable = ({
                         type="number"
                         min="0"
                         className="w-20 bg-millionaire-primary text-millionaire-gold border-millionaire-accent"
-                        value={localBonusPoints[team.id] || 0}
+                        value={localBonusPoints[team.id] !== undefined ? localBonusPoints[team.id] : team.bonusPoints || 0}
                         onChange={(e) => handleLocalBonusChange(team.id, e.target.value)}
                       />
                     </TableCell>
