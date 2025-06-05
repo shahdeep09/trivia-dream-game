@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,26 +7,35 @@ import { ArrowLeft, Play, Settings, Trash2 } from "lucide-react";
 import { QuizConfig } from "@/types/quiz";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const QuizManager = () => {
   const navigate = useNavigate();
   const [quizHistory, setQuizHistory] = useState<QuizConfig[]>([]);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     loadQuizHistory();
   }, []);
 
   const loadQuizHistory = async () => {
+    if (!user) {
+      setQuizHistory([]);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('quizzes')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error loading quiz history:', error);
         // Fallback to localStorage if Supabase fails
-        const savedHistory = localStorage.getItem("quiz-history");
+        const savedHistory = localStorage.getItem(`quiz-history-${user.id}`);
         if (savedHistory) {
           setQuizHistory(JSON.parse(savedHistory));
         }
@@ -45,12 +55,12 @@ const QuizManager = () => {
         setQuizHistory(formattedQuizzes);
         
         // Update localStorage as backup
-        localStorage.setItem("quiz-history", JSON.stringify(formattedQuizzes));
+        localStorage.setItem(`quiz-history-${user.id}`, JSON.stringify(formattedQuizzes));
       }
     } catch (error) {
       console.error('Error loading quiz history:', error);
       // Fallback to localStorage
-      const savedHistory = localStorage.getItem("quiz-history");
+      const savedHistory = localStorage.getItem(`quiz-history-${user.id}`);
       if (savedHistory) {
         setQuizHistory(JSON.parse(savedHistory));
       }
@@ -63,34 +73,52 @@ const QuizManager = () => {
   };
 
   const deleteQuiz = async (quizId: string) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "User not authenticated",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsDeleting(quizId);
+
     try {
       // Delete teams associated with this quiz from Supabase
       const { error: teamsError } = await supabase
         .from('teams')
         .delete()
-        .eq('quiz_id', quizId);
+        .eq('quiz_id', quizId)
+        .eq('user_id', user.id);
 
       if (teamsError) {
         console.error('Error deleting teams from Supabase:', teamsError);
+        throw teamsError;
       }
 
       // Delete quiz from Supabase
       const { error: quizError } = await supabase
         .from('quizzes')
         .delete()
-        .eq('id', quizId);
+        .eq('id', quizId)
+        .eq('user_id', user.id);
 
       if (quizError) {
         console.error('Error deleting quiz from Supabase:', quizError);
+        throw quizError;
       }
 
-      // Delete quiz from localStorage and update state
+      // Update local state immediately
       const updatedHistory = quizHistory.filter(quiz => quiz.id !== quizId);
       setQuizHistory(updatedHistory);
-      localStorage.setItem("quiz-history", JSON.stringify(updatedHistory));
+      
+      // Update localStorage
+      localStorage.setItem(`quiz-history-${user.id}`, JSON.stringify(updatedHistory));
       
       // Clean up quiz-specific team data from localStorage
       localStorage.removeItem(`teams-${quizId}`);
+      localStorage.removeItem(`teams-${quizId}-${user.id}`);
       
       // If this was the current quiz, clear it
       const currentQuiz = localStorage.getItem("current-quiz-config");
@@ -110,9 +138,11 @@ const QuizManager = () => {
       console.error('Error deleting quiz:', error);
       toast({
         title: "Error",
-        description: "Failed to delete quiz completely",
+        description: "Failed to delete quiz completely. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -175,7 +205,8 @@ const QuizManager = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => deleteQuiz(quiz.id)}
-                      className="text-millionaire-wrong hover:text-white hover:bg-millionaire-wrong"
+                      disabled={isDeleting === quiz.id}
+                      className="text-millionaire-wrong hover:text-white hover:bg-millionaire-wrong disabled:opacity-50"
                     >
                       <Trash2 size={16} />
                     </Button>

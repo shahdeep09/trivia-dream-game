@@ -109,6 +109,7 @@ export const useQuizSubmission = (updateQuizHistory: (quiz: QuizConfig) => void)
         description: "Your quiz has been configured and saved to database",
       });
 
+      // Use navigate instead of window.location for proper React Router navigation
       navigate("/");
     } catch (error) {
       console.error('Error saving quiz:', error);

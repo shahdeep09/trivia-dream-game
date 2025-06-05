@@ -305,11 +305,15 @@ const GameScreen = ({
   const updateTeamData = async (teamToUpdate: Team, pointsToAdd: number) => {
     console.log('Updating team data:', teamToUpdate.name, 'Adding points:', pointsToAdd);
     
-    if (!user || !quizConfig?.id) {
-      console.error('No authenticated user or quiz config found');
+    if (!user || !quizConfig?.id || !teamId) {
+      console.error('Missing required data for team update:', {
+        user: !!user,
+        quizConfig: !!quizConfig?.id,
+        teamId: !!teamId
+      });
       toast({
         title: "Error",
-        description: "User not authenticated or no quiz configuration",
+        description: "Missing required data to save score",
         variant: "destructive"
       });
       return;
@@ -323,9 +327,15 @@ const GameScreen = ({
         totalLifelinesUsed: (teamToUpdate.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
       };
 
-      // Update in Supabase with proper user isolation
-      console.log('Updating team in Supabase:', teamId, 'Quiz:', quizConfig.id, 'User:', user.id);
-      const { error } = await supabase
+      // Update in Supabase with proper validation
+      console.log('Updating team in Supabase:', {
+        teamId,
+        quizId: quizConfig.id,
+        userId: user.id,
+        points: updatedTeam.points
+      });
+
+      const { data: updateResult, error } = await supabase
         .from('teams')
         .update({
           points: updatedTeam.points,
@@ -335,24 +345,26 @@ const GameScreen = ({
         })
         .eq('id', teamId)
         .eq('quiz_id', quizConfig.id)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select();
 
       if (error) {
-        console.error('Error updating team in Supabase:', error);
-        toast({
-          title: "Error",
-          description: "Failed to save points to database",
-          variant: "destructive"
-        });
-      } else {
-        console.log('Team updated in Supabase successfully');
-        toast({
-          title: "Points Saved",
-          description: `${pointsToAdd} points added to ${teamToUpdate.name}`,
-        });
+        console.error('Supabase update error:', error);
+        throw error;
       }
 
-      // Update localStorage with user-specific key
+      if (!updateResult || updateResult.length === 0) {
+        console.error('No rows updated in Supabase');
+        throw new Error('Team not found or update failed');
+      }
+
+      console.log('Team updated in Supabase successfully:', updateResult);
+      toast({
+        title: "Score Saved",
+        description: `${pointsToAdd} points added to ${teamToUpdate.name}`,
+      });
+
+      // Update localStorage with user-specific key as backup
       const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
       const savedTeams = localStorage.getItem(userSpecificKey);
       
@@ -385,11 +397,40 @@ const GameScreen = ({
       }
     } catch (error) {
       console.error('Error updating team data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save game results",
-        variant: "destructive"
-      });
+      
+      // Fallback: save to localStorage only
+      try {
+        const userSpecificKey = `teams-${quizConfig.id}-${user.id}`;
+        const savedTeams = localStorage.getItem(userSpecificKey);
+        
+        if (savedTeams) {
+          const teams: Team[] = JSON.parse(savedTeams);
+          const teamIndex = teams.findIndex(team => team.id === teamId);
+          
+          if (teamIndex !== -1) {
+            teams[teamIndex] = {
+              ...teamToUpdate,
+              points: teamToUpdate.points + pointsToAdd,
+              gamesPlayed: teamToUpdate.gamesPlayed + 1,
+              totalLifelinesUsed: (teamToUpdate.totalLifelinesUsed || 0) + totalLifelinesUsedInGame
+            };
+            localStorage.setItem(userSpecificKey, JSON.stringify(teams));
+            localStorage.setItem("quiz-teams", JSON.stringify(teams));
+            
+            toast({
+              title: "Score Saved Locally",
+              description: `${pointsToAdd} points saved locally for ${teamToUpdate.name}`,
+            });
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Fallback save also failed:', fallbackError);
+        toast({
+          title: "Error",
+          description: "Failed to save game results",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -401,8 +442,8 @@ const GameScreen = ({
 
     console.log('Game ending, saving points. TeamId:', teamId, 'Points:', cumulativePoints);
 
-    // Update team data with the new function
-    if (teamId && user && quizConfig?.id) {
+    // Update team data with proper validation
+    if (teamId && user && quizConfig?.id && cumulativePoints > 0) {
       try {
         // Try to get team from Supabase first
         const { data: supabaseTeam, error } = await supabase
@@ -438,12 +479,29 @@ const GameScreen = ({
               await updateTeamData(team, cumulativePoints);
             } else {
               console.error('Team not found in any storage');
+              toast({
+                title: "Warning",
+                description: "Could not find team to save score",
+                variant: "destructive"
+              });
             }
           }
         }
       } catch (error) {
         console.error('Error finding team for update:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save game results",
+          variant: "destructive"
+        });
       }
+    } else {
+      console.log('Skipping score save - missing data or zero points:', {
+        teamId: !!teamId,
+        user: !!user,
+        quizConfig: !!quizConfig?.id,
+        points: cumulativePoints
+      });
     }
     
     const gameResult: GameResult = {
@@ -456,7 +514,7 @@ const GameScreen = ({
     console.log('Calling onGameEnd with result:', gameResult);
     onGameEnd(gameResult);
     
-    // Redirect to home page (Teams tab)
+    // Use navigate instead of window.location for proper React Router navigation
     navigate('/');
   };
 
