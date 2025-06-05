@@ -6,8 +6,12 @@ import { QuizConfig } from "@/types/quiz";
 import { useQuizHistory } from "@/hooks/useQuizHistory";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Team } from "@/utils/gameUtils";
 import QuizHeader from "@/components/home/QuizHeader";
 import NoQuizConfigured from "@/components/home/NoQuizConfigured";
+import TeamsTab from "@/components/home/TeamsTab";
+import PointsTable from "@/components/home/PointsTable";
 import { UserMenu } from "@/components/auth/UserMenu";
 
 const Home = () => {
@@ -16,6 +20,8 @@ const Home = () => {
   const { quizHistory, loadQuizHistory } = useQuizHistory();
   const [currentQuizConfig, setCurrentQuizConfig] = useState<QuizConfig | null>(null);
   const [loading, setLoading] = useState(true);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const initializePage = async () => {
@@ -32,9 +38,6 @@ const Home = () => {
       if (savedConfig) {
         try {
           const config = JSON.parse(savedConfig);
-          
-          // Verify this quiz belongs to the current user by checking if it exists in their quiz history
-          // We'll check this after quiz history is loaded
           setCurrentQuizConfig(config);
         } catch (error) {
           console.error("Error parsing saved quiz config:", error);
@@ -64,40 +67,112 @@ const Home = () => {
           description: "You can only access quizzes that you have created.",
           variant: "destructive"
         });
+      } else {
+        // Load teams for this quiz
+        loadTeams();
       }
     }
   }, [currentQuizConfig, quizHistory, user]);
+
+  const loadTeams = async () => {
+    if (!currentQuizConfig || !user) return;
+
+    try {
+      const { data: teamsData, error } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('quiz_id', currentQuizConfig.id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error loading teams:', error);
+        return;
+      }
+
+      const formattedTeams: Team[] = teamsData?.map(team => ({
+        id: team.id,
+        name: team.name,
+        points: team.points || 0,
+        bonusPoints: team.bonus_points || 0,
+        gamesPlayed: team.games_played || 0,
+        totalLifelinesUsed: team.total_lifelines_used || 0
+      })) || [];
+
+      setTeams(formattedTeams);
+      
+      // Also save to localStorage for compatibility
+      localStorage.setItem("millionaire-teams", JSON.stringify(formattedTeams));
+    } catch (error) {
+      console.error('Error loading teams:', error);
+    }
+  };
 
   const forceRefresh = async () => {
     if (!user) return;
     
     setLoading(true);
     await loadQuizHistory();
-    
-    // Refresh teams data from Supabase
-    if (currentQuizConfig) {
-      try {
-        const { data: teams, error } = await supabase
-          .from('teams')
-          .select('*')
-          .eq('quiz_id', currentQuizConfig.id)
-          .eq('user_id', user.id);
-
-        if (!error && teams) {
-          localStorage.setItem(`teams-${currentQuizConfig.id}`, JSON.stringify(teams));
-          localStorage.setItem("millionaire-teams", JSON.stringify(teams));
-        }
-      } catch (error) {
-        console.error('Error refreshing teams data:', error);
-      }
-    }
-    
+    await loadTeams();
+    setRefreshKey(prev => prev + 1);
     setLoading(false);
     
     toast({
       title: "Data Refreshed",
       description: "Quiz and team data has been updated from the database."
     });
+  };
+
+  const calculateTotalPoints = (team: Team) => {
+    return (team.points || 0) + (team.bonusPoints || 0);
+  };
+
+  const handleBonusPointsChange = (teamId: string, value: string) => {
+    const points = parseInt(value) || 0;
+    setTeams(prevTeams =>
+      prevTeams.map(team =>
+        team.id === teamId ? { ...team, bonusPoints: points } : team
+      )
+    );
+  };
+
+  const saveBonusPoints = async (teamId: string) => {
+    if (!user) return;
+
+    const team = teams.find(t => t.id === teamId);
+    if (!team) return;
+
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .update({ bonus_points: team.bonusPoints || 0 })
+        .eq('id', teamId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error saving bonus points:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save bonus points",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Update localStorage
+      localStorage.setItem("millionaire-teams", JSON.stringify(teams));
+
+      toast({
+        title: "Success",
+        description: "Bonus points saved successfully"
+      });
+    } catch (error) {
+      console.error('Error saving bonus points:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save bonus points",
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) {
@@ -141,11 +216,36 @@ const Home = () => {
           <UserMenu />
         </div>
         
-        <div className="text-center">
+        <div className="text-center mb-8">
           <p className="text-millionaire-light mb-4">
             Your quiz is ready! You can manage teams, view statistics, or start playing the game.
           </p>
         </div>
+
+        <Tabs defaultValue="teams" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-millionaire-secondary">
+            <TabsTrigger value="teams" className="data-[state=active]:bg-millionaire-primary data-[state=active]:text-millionaire-gold">
+              Teams ({teams.length})
+            </TabsTrigger>
+            <TabsTrigger value="points" className="data-[state=active]:bg-millionaire-primary data-[state=active]:text-millionaire-gold">
+              Points Table
+            </TabsTrigger>
+          </TabsList>
+
+          <TeamsTab 
+            teams={teams} 
+            refreshKey={refreshKey} 
+            calculateTotalPoints={calculateTotalPoints}
+          />
+
+          <PointsTable 
+            teams={teams}
+            refreshKey={refreshKey}
+            calculateTotalPoints={calculateTotalPoints}
+            handleBonusPointsChange={handleBonusPointsChange}
+            saveBonusPoints={saveBonusPoints}
+          />
+        </Tabs>
       </div>
     </div>
   );
