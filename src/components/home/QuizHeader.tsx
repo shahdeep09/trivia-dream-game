@@ -27,12 +27,12 @@ const QuizHeader = ({ currentQuizConfig, forceRefresh }: QuizHeaderProps) => {
           </p>
         </div>
       </div>
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2">
         <Button
           onClick={forceRefresh}
           variant="outline"
           size="sm"
-          className="border-millionaire-accent hover:bg-millionaire-accent text-white"
+          className="border-millionaire-accent hover:bg-millionaire-accent text-white h-9"
         >
           <RefreshCw size={16} className="mr-2" />
           Refresh Data
@@ -41,7 +41,7 @@ const QuizHeader = ({ currentQuizConfig, forceRefresh }: QuizHeaderProps) => {
           asChild
           variant="outline"
           size="sm"
-          className="border-millionaire-accent hover:bg-millionaire-accent text-white"
+          className="border-millionaire-accent hover:bg-millionaire-accent text-white h-9"
         >
           <Link to="/manager">
             <Settings size={16} className="mr-2" />
@@ -51,7 +51,7 @@ const QuizHeader = ({ currentQuizConfig, forceRefresh }: QuizHeaderProps) => {
         <Button
           asChild
           size="sm"
-          className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary font-semibold"
+          className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary font-semibold h-9"
         >
           <Link to="/game">
             <Play size={16} className="mr-2" />
