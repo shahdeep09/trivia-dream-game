@@ -13,6 +13,7 @@ class SoundManager {
   private isMuted: boolean = false;
   private suspenseTimeout: number | null = null;
   private lifelineTimeout: number | null = null;
+  private fastForwardWasPaused: boolean = false; // Track if fast-forward was paused
 
   constructor() {
     this.initializeSounds();
@@ -122,6 +123,7 @@ class SoundManager {
   public handleGameStart(): void {
     this.stopAll();
     this.play('lets-play');
+    this.fastForwardWasPaused = false; // Reset pause state
   }
 
   public handleFastForwardStart(): void {
@@ -129,6 +131,7 @@ class SoundManager {
     setTimeout(() => {
       if (!this.isMuted) {
         this.play('fast-forward');
+        this.fastForwardWasPaused = false; // Reset pause state when starting
       }
     }, 2000);
   }
@@ -203,6 +206,13 @@ class SoundManager {
     // Stop fast-forward when moving to question 6 (index 5)
     if (questionIndex === 5) {
       this.stop('fast-forward');
+      this.fastForwardWasPaused = false; // Reset since we're past fast-forward questions
+    }
+
+    // For questions 1-5 (index 0-4), resume fast-forward if it was paused
+    if (questionIndex < 5 && this.fastForwardWasPaused) {
+      this.play('fast-forward');
+      this.fastForwardWasPaused = false; // Reset pause state
     }
 
     // Play lets-play for questions 6+ (index 5+)
@@ -240,8 +250,19 @@ class SoundManager {
   }
 
   public handlePause(): void {
-    // Stop fast-forward on pause (for Q1-5)
-    this.stop('fast-forward');
+    // Stop fast-forward on pause (for Q1-5) and remember it was paused
+    if (this.isPlaying('fast-forward')) {
+      this.stop('fast-forward');
+      this.fastForwardWasPaused = true; // Remember that fast-forward was paused
+    }
+  }
+
+  public handleResume(questionIndex: number): void {
+    // Resume fast-forward if it was paused and we're still in questions 1-5
+    if (this.fastForwardWasPaused && questionIndex < 5) {
+      this.play('fast-forward');
+      this.fastForwardWasPaused = false; // Reset pause state
+    }
   }
 
   public handleWalkAway(): void {

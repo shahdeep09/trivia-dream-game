@@ -545,6 +545,9 @@ const GameScreen = ({
   const toggleTimerPause = () => {
     if (!timerPaused) {
       soundManager.handlePause();
+    } else {
+      // Resume - pass current question index to determine if fast-forward should resume
+      soundManager.handleResume(currentQuestionIndex);
     }
     setTimerPaused(!timerPaused);
   };
