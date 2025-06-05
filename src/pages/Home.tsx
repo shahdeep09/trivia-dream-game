@@ -1,338 +1,151 @@
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
+import { QuizConfig } from "@/types/quiz";
+import { useQuizHistory } from "@/hooks/useQuizHistory";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import QuizHeader from "@/components/home/QuizHeader";
-import TeamsTab from "@/components/home/TeamsTab";
-import PointsTable from "@/components/home/PointsTable";
 import NoQuizConfigured from "@/components/home/NoQuizConfigured";
 import { UserMenu } from "@/components/auth/UserMenu";
-import { useNavigate } from "react-router-dom";
-import { QuizConfig } from "@/types/quiz";
-import { Team } from "@/utils/gameUtils";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "@/hooks/use-toast";
 
 const Home = () => {
-  const [activeTab, setActiveTab] = useState("teams");
-  const [currentQuizConfig, setCurrentQuizConfig] = useState<QuizConfig | null>(null);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { quizHistory, loadQuizHistory } = useQuizHistory();
+  const [currentQuizConfig, setCurrentQuizConfig] = useState<QuizConfig | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Load quiz data and initialize teams based on quiz configuration
   useEffect(() => {
-    const loadQuizData = async () => {
+    const initializePage = async () => {
       if (!user) {
-        console.log('No user logged in, clearing data');
-        setCurrentQuizConfig(null);
-        setTeams([]);
+        setLoading(false);
         return;
       }
 
-      try {
-        const quizConfig = localStorage.getItem("current-quiz-config");
-        if (quizConfig) {
-          const config = JSON.parse(quizConfig);
-          console.log('Loading quiz config:', config);
-          setCurrentQuizConfig(config);
-          
-          // Initialize teams based on quiz configuration for current user
-          await initializeTeamsFromConfig(config);
-        } else {
-          console.log('No quiz config found');
-          setCurrentQuizConfig(null);
-          setTeams([]);
-        }
-      } catch (error) {
-        console.error("Error loading quiz data:", error);
-      }
-    };
-
-    loadQuizData();
-  }, [refreshKey, user]);
-
-  // Listen for team data updates from the game screen
-  useEffect(() => {
-    const handleTeamDataUpdate = async (event: CustomEvent) => {
-      console.log('Team data update event received:', event.detail);
-      const { quizId, userId } = event.detail;
+      // Load user's quiz history
+      await loadQuizHistory();
       
-      // Only refresh if it's for the current user and quiz
-      if (user?.id === userId && currentQuizConfig?.id === quizId) {
-        console.log('Refreshing teams due to update event');
-        setRefreshKey(prev => prev + 1);
+      // Check for current quiz config in localStorage
+      const savedConfig = localStorage.getItem("current-quiz-config");
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig);
+          
+          // Verify this quiz belongs to the current user by checking if it exists in their quiz history
+          // We'll check this after quiz history is loaded
+          setCurrentQuizConfig(config);
+        } catch (error) {
+          console.error("Error parsing saved quiz config:", error);
+          localStorage.removeItem("current-quiz-config");
+        }
       }
+      
+      setLoading(false);
     };
 
-    window.addEventListener('teamDataUpdated', handleTeamDataUpdate as EventListener);
-    
-    return () => {
-      window.removeEventListener('teamDataUpdated', handleTeamDataUpdate as EventListener);
-    };
-  }, [user?.id, currentQuizConfig?.id]);
+    initializePage();
+  }, [user, loadQuizHistory]);
 
-  // Initialize teams from quiz configuration for current user only
-  const initializeTeamsFromConfig = async (config: QuizConfig) => {
-    if (!user) {
-      console.log('No user, cannot initialize teams');
-      return;
+  // Verify the current quiz belongs to the user once quiz history is loaded
+  useEffect(() => {
+    if (currentQuizConfig && quizHistory.length > 0 && user) {
+      const userOwnsQuiz = quizHistory.some(quiz => quiz.id === currentQuizConfig.id);
+      
+      if (!userOwnsQuiz) {
+        // This quiz doesn't belong to the current user, clear it
+        localStorage.removeItem("current-quiz-config");
+        localStorage.removeItem("millionaire-teams");
+        setCurrentQuizConfig(null);
+        
+        toast({
+          title: "Quiz Access Denied",
+          description: "You can only access quizzes that you have created.",
+          variant: "destructive"
+        });
+      }
     }
+  }, [currentQuizConfig, quizHistory, user]);
 
-    try {
-      let loadedTeams: Team[] = [];
-
-      // Try to load from Supabase for current user and quiz
-      if (config.id) {
-        console.log('Loading teams from Supabase for user:', user.id, 'quiz:', config.id);
-        const { data: supabaseTeams, error } = await supabase
+  const forceRefresh = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    await loadQuizHistory();
+    
+    // Refresh teams data from Supabase
+    if (currentQuizConfig) {
+      try {
+        const { data: teams, error } = await supabase
           .from('teams')
           .select('*')
-          .eq('quiz_id', config.id)
-          .eq('user_id', user.id);
-
-        if (!error && supabaseTeams && supabaseTeams.length > 0) {
-          console.log('Found teams in Supabase:', supabaseTeams);
-          // Convert Supabase data to Team format
-          loadedTeams = supabaseTeams.map(team => ({
-            id: team.id,
-            name: team.name,
-            points: team.points || 0,
-            gamesPlayed: team.games_played || 0,
-            bonusPoints: team.bonus_points || 0,
-            totalLifelinesUsed: team.total_lifelines_used || 0
-          }));
-        } else {
-          console.log('No teams found in Supabase, creating from config');
-          // Create teams from quiz config
-          loadedTeams = await createTeamsFromConfig(config);
-        }
-      } else {
-        console.log('No quiz ID, creating teams from config');
-        loadedTeams = await createTeamsFromConfig(config);
-      }
-
-      setTeams(loadedTeams);
-      console.log('Teams loaded:', loadedTeams);
-    } catch (error) {
-      console.error("Error initializing teams:", error);
-      // Fallback to creating teams from config
-      const fallbackTeams = await createTeamsFromConfig(config);
-      setTeams(fallbackTeams);
-    }
-  };
-
-  // Create teams from quiz configuration for current user
-  const createTeamsFromConfig = async (config: QuizConfig): Promise<Team[]> => {
-    if (!user) {
-      console.log('No user, cannot create teams');
-      return [];
-    }
-
-    const newTeams = config.teamNames.map((name, index) => ({
-      id: crypto.randomUUID(),
-      name: name,
-      points: 0,
-      gamesPlayed: 0,
-      bonusPoints: 0,
-      totalLifelinesUsed: 0
-    }));
-
-    console.log('Creating new teams:', newTeams);
-
-    // Save to Supabase if user is authenticated and quiz exists
-    if (config.id) {
-      try {
-        // First check if quiz exists in Supabase
-        const { data: quizExists } = await supabase
-          .from('quizzes')
-          .select('id')
-          .eq('id', config.id)
-          .eq('user_id', user.id)
-          .single();
-
-        if (quizExists) {
-          const teamsData = newTeams.map(team => ({
-            id: team.id,
-            quiz_id: config.id,
-            user_id: user.id,
-            name: team.name,
-            points: team.points,
-            games_played: team.gamesPlayed,
-            bonus_points: team.bonusPoints,
-            total_lifelines_used: team.totalLifelinesUsed
-          }));
-
-          const { error } = await supabase
-            .from('teams')
-            .upsert(teamsData);
-
-          if (error) {
-            console.error('Error saving teams to Supabase:', error);
-          } else {
-            console.log('Teams saved to Supabase successfully');
-          }
-        } else {
-          console.log('Quiz not found in Supabase, saving only to localStorage');
-        }
-      } catch (error) {
-        console.error('Error creating teams in Supabase:', error);
-      }
-    }
-
-    // Also save to localStorage as backup with user-specific key
-    const userSpecificKey = `teams-${config.id}-${user.id}`;
-    localStorage.setItem(userSpecificKey, JSON.stringify(newTeams));
-    
-    // Update the general quiz-teams for backward compatibility
-    localStorage.setItem("quiz-teams", JSON.stringify(newTeams));
-
-    return newTeams;
-  };
-
-  const forceRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
-
-  const calculateTotalPoints = (team: Team): number => {
-    return (team.points || 0) + (team.bonusPoints || 0);
-  };
-
-  const handleBonusPointsChange = (teamId: string, value: string) => {
-    const updatedTeams = teams.map(team => 
-      team.id === teamId 
-        ? { ...team, bonusPoints: parseInt(value) || 0 }
-        : team
-    );
-    setTeams(updatedTeams);
-  };
-
-  const saveBonusPoints = async (teamId: string) => {
-    if (!user || !currentQuizConfig) {
-      toast({
-        title: "Error",
-        description: "User not authenticated or no quiz configuration",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const teamToUpdate = teams.find(team => team.id === teamId);
-      if (!teamToUpdate) return;
-
-      console.log('Saving bonus points for team:', teamToUpdate.name, 'points:', teamToUpdate.bonusPoints);
-
-      // Save to Supabase if quiz ID exists
-      if (currentQuizConfig.id) {
-        const { error } = await supabase
-          .from('teams')
-          .update({
-            bonus_points: teamToUpdate.bonusPoints || 0,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', teamId)
           .eq('quiz_id', currentQuizConfig.id)
           .eq('user_id', user.id);
 
-        if (error) {
-          console.error('Error updating bonus points in Supabase:', error);
-          toast({
-            title: "Error",
-            description: "Failed to save bonus points to database",
-            variant: "destructive"
-          });
-          return;
-        } else {
-          console.log('Bonus points saved to Supabase successfully');
+        if (!error && teams) {
+          localStorage.setItem(`teams-${currentQuizConfig.id}`, JSON.stringify(teams));
+          localStorage.setItem("millionaire-teams", JSON.stringify(teams));
         }
+      } catch (error) {
+        console.error('Error refreshing teams data:', error);
       }
-
-      // Update localStorage with user-specific key
-      const userSpecificKey = `teams-${currentQuizConfig.id}-${user.id}`;
-      localStorage.setItem(userSpecificKey, JSON.stringify(teams));
-      localStorage.setItem("quiz-teams", JSON.stringify(teams));
-      
-      toast({
-        title: "Success",
-        description: `Bonus points saved for ${teamToUpdate.name}`,
-      });
-      
-      forceRefresh();
-    } catch (error) {
-      console.error('Error saving bonus points:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save bonus points",
-        variant: "destructive"
-      });
     }
+    
+    setLoading(false);
+    
+    toast({
+      title: "Data Refreshed",
+      description: "Quiz and team data has been updated from the database."
+    });
   };
 
-  if (!currentQuizConfig) {
-    return <NoQuizConfigured />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-millionaire-dark text-millionaire-light">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-4xl font-bold text-millionaire-gold">Loading...</h1>
+            <UserMenu />
+          </div>
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <div className="text-millionaire-light">Loading your quiz data...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show NoQuizConfigured if user has no quizzes or no current quiz is selected
+  if (!currentQuizConfig || quizHistory.length === 0) {
+    return (
+      <div className="min-h-screen bg-millionaire-dark text-millionaire-light">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-4xl font-bold text-millionaire-gold">Quiz Master</h1>
+            <UserMenu />
+          </div>
+          <NoQuizConfigured />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-millionaire-dark text-millionaire-light">
-      <div className="container mx-auto p-4">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-4xl font-bold text-millionaire-gold mb-2">
-              Quiz Master Dashboard
-            </h1>
-            <p className="text-millionaire-light">
-              Manage your quiz game and track team progress
-            </p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex-1">
+            <QuizHeader currentQuizConfig={currentQuizConfig} forceRefresh={forceRefresh} />
           </div>
-          <div className="flex items-center gap-4">
-            <UserMenu />
-            <Button
-              onClick={() => navigate("/setup")}
-              className="bg-millionaire-accent hover:bg-millionaire-accent/90"
-            >
-              Create New Quiz
-            </Button>
-          </div>
+          <UserMenu />
         </div>
-
-        <QuizHeader 
-          currentQuizConfig={currentQuizConfig}
-          forceRefresh={forceRefresh}
-        />
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
-          <TabsList className="grid w-full grid-cols-2 bg-millionaire-dark border border-millionaire-accent">
-            <TabsTrigger 
-              value="teams"
-              className="data-[state=active]:bg-millionaire-accent data-[state=active]:text-millionaire-dark"
-            >
-              Teams
-            </TabsTrigger>
-            <TabsTrigger 
-              value="points"
-              className="data-[state=active]:bg-millionaire-accent data-[state=active]:text-millionaire-dark"
-            >
-              Points Table
-            </TabsTrigger>
-          </TabsList>
-
-          <TeamsTab 
-            teams={teams}
-            refreshKey={refreshKey}
-            calculateTotalPoints={calculateTotalPoints}
-          />
-
-          <PointsTable 
-            teams={teams}
-            refreshKey={refreshKey}
-            calculateTotalPoints={calculateTotalPoints}
-            handleBonusPointsChange={handleBonusPointsChange}
-            saveBonusPoints={saveBonusPoints}
-          />
-        </Tabs>
+        
+        <div className="text-center">
+          <p className="text-millionaire-light mb-4">
+            Your quiz is ready! You can manage teams, view statistics, or start playing the game.
+          </p>
+        </div>
       </div>
     </div>
   );

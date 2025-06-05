@@ -128,6 +128,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_teams_quiz_id"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "teams_quiz_id_fkey"
             columns: ["quiz_id"]
             isOneToOne: false
