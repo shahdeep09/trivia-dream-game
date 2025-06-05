@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -9,7 +10,7 @@ interface TeamCardProps {
   calculateTotalPoints: (team: Team) => number;
 }
 
-const TeamCard = ({ team, calculateTotalPoints }: TeamCardProps) => {
+const TeamCard = React.memo(({ team, calculateTotalPoints }: TeamCardProps) => {
   return (
     <Card className="bg-millionaire-secondary border-millionaire-accent">
       <CardHeader>
@@ -34,6 +35,8 @@ const TeamCard = ({ team, calculateTotalPoints }: TeamCardProps) => {
       </CardContent>
     </Card>
   );
-};
+});
+
+TeamCard.displayName = 'TeamCard';
 
 export default TeamCard;

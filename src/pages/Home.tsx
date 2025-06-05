@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { QuizConfig } from "@/types/quiz";
@@ -22,58 +21,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<Team[]>([]);
 
-  useEffect(() => {
-    const initializePage = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      // Load user's quiz history
-      await loadQuizHistory();
-      
-      // Check for current quiz config in localStorage
-      const savedConfig = localStorage.getItem("current-quiz-config");
-      if (savedConfig) {
-        try {
-          const config = JSON.parse(savedConfig);
-          setCurrentQuizConfig(config);
-        } catch (error) {
-          console.error("Error parsing saved quiz config:", error);
-          localStorage.removeItem("current-quiz-config");
-        }
-      }
-      
-      setLoading(false);
-    };
-
-    initializePage();
-  }, [user, loadQuizHistory]);
-
-  // Verify the current quiz belongs to the user once quiz history is loaded
-  useEffect(() => {
-    if (currentQuizConfig && quizHistory.length > 0 && user) {
-      const userOwnsQuiz = quizHistory.some(quiz => quiz.id === currentQuizConfig.id);
-      
-      if (!userOwnsQuiz) {
-        // This quiz doesn't belong to the current user, clear it
-        localStorage.removeItem("current-quiz-config");
-        localStorage.removeItem("millionaire-teams");
-        setCurrentQuizConfig(null);
-        
-        toast({
-          title: "Quiz Access Denied",
-          description: "You can only access quizzes that you have created.",
-          variant: "destructive"
-        });
-      } else {
-        // Load teams for this quiz
-        loadTeams();
-      }
-    }
-  }, [currentQuizConfig, quizHistory, user]);
-
-  const loadTeams = async () => {
+  const loadTeams = useCallback(async () => {
     if (!currentQuizConfig || !user) return;
 
     try {
@@ -104,9 +52,95 @@ const Home = () => {
     } catch (error) {
       console.error('Error loading teams:', error);
     }
-  };
+  }, [currentQuizConfig, user]);
 
-  const forceRefresh = async () => {
+  // Create user profile if it doesn't exist
+  const createUserProfile = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      // Check if profile already exists
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!existingProfile) {
+        // Create user profile
+        const { error } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            username: user.email?.split('@')[0] || 'User'
+          });
+
+        if (error) {
+          console.error('Error creating user profile:', error);
+        } else {
+          console.log('User profile created successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking/creating user profile:', error);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const initializePage = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      // Create user profile if needed
+      await createUserProfile();
+
+      // Load user's quiz history
+      await loadQuizHistory();
+      
+      // Check for current quiz config in localStorage
+      const savedConfig = localStorage.getItem("current-quiz-config");
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig);
+          setCurrentQuizConfig(config);
+        } catch (error) {
+          console.error("Error parsing saved quiz config:", error);
+          localStorage.removeItem("current-quiz-config");
+        }
+      }
+      
+      setLoading(false);
+    };
+
+    initializePage();
+  }, [user, loadQuizHistory, createUserProfile]);
+
+  // Verify the current quiz belongs to the user once quiz history is loaded
+  useEffect(() => {
+    if (currentQuizConfig && quizHistory.length > 0 && user) {
+      const userOwnsQuiz = quizHistory.some(quiz => quiz.id === currentQuizConfig.id);
+      
+      if (!userOwnsQuiz) {
+        // This quiz doesn't belong to the current user, clear it
+        localStorage.removeItem("current-quiz-config");
+        localStorage.removeItem("millionaire-teams");
+        setCurrentQuizConfig(null);
+        
+        toast({
+          title: "Quiz Access Denied",
+          description: "You can only access quizzes that you have created.",
+          variant: "destructive"
+        });
+      } else {
+        // Load teams for this quiz
+        loadTeams();
+      }
+    }
+  }, [currentQuizConfig, quizHistory, user, loadTeams]);
+
+  const forceRefresh = useCallback(async () => {
     if (!user) return;
     
     setLoading(true);
@@ -118,22 +152,22 @@ const Home = () => {
       title: "Data Refreshed",
       description: "Quiz and team data has been updated from the database."
     });
-  };
+  }, [user, loadQuizHistory, loadTeams]);
 
-  const calculateTotalPoints = (team: Team) => {
+  const calculateTotalPoints = useCallback((team: Team) => {
     return (team.points || 0) + (team.bonusPoints || 0);
-  };
+  }, []);
 
-  const handleBonusPointsChange = (teamId: string, value: string) => {
+  const handleBonusPointsChange = useCallback((teamId: string, value: string) => {
     const points = parseInt(value) || 0;
     setTeams(prevTeams =>
       prevTeams.map(team =>
         team.id === teamId ? { ...team, bonusPoints: points } : team
       )
     );
-  };
+  }, []);
 
-  const saveBonusPoints = async (teamId: string) => {
+  const saveBonusPoints = useCallback(async (teamId: string) => {
     if (!user) return;
 
     const team = teams.find(t => t.id === teamId);
@@ -171,7 +205,7 @@ const Home = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [user, teams]);
 
   if (loading) {
     return (
