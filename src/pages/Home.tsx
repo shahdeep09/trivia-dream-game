@@ -21,7 +21,6 @@ const Home = () => {
   const [currentQuizConfig, setCurrentQuizConfig] = useState<QuizConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const initializePage = async () => {
@@ -113,7 +112,6 @@ const Home = () => {
     setLoading(true);
     await loadQuizHistory();
     await loadTeams();
-    setRefreshKey(prev => prev + 1);
     setLoading(false);
     
     toast({
@@ -234,13 +232,11 @@ const Home = () => {
 
           <TeamsTab 
             teams={teams} 
-            refreshKey={refreshKey} 
             calculateTotalPoints={calculateTotalPoints}
           />
 
           <PointsTable 
             teams={teams}
-            refreshKey={refreshKey}
             calculateTotalPoints={calculateTotalPoints}
             handleBonusPointsChange={handleBonusPointsChange}
             saveBonusPoints={saveBonusPoints}

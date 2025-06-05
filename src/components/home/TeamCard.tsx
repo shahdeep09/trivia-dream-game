@@ -6,13 +6,12 @@ import { Team } from "@/utils/gameUtils";
 
 interface TeamCardProps {
   team: Team;
-  refreshKey: number;
   calculateTotalPoints: (team: Team) => number;
 }
 
-const TeamCard = ({ team, refreshKey, calculateTotalPoints }: TeamCardProps) => {
+const TeamCard = ({ team, calculateTotalPoints }: TeamCardProps) => {
   return (
-    <Card key={`${team.id}-${refreshKey}`} className="bg-millionaire-secondary border-millionaire-accent">
+    <Card className="bg-millionaire-secondary border-millionaire-accent">
       <CardHeader>
         <CardTitle className="text-millionaire-gold">{team.name}</CardTitle>
       </CardHeader>

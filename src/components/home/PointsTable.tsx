@@ -8,7 +8,6 @@ import { Team } from "@/utils/gameUtils";
 
 interface PointsTableProps {
   teams: Team[];
-  refreshKey: number;
   calculateTotalPoints: (team: Team) => number;
   handleBonusPointsChange: (teamId: string, value: string) => void;
   saveBonusPoints: (teamId: string) => Promise<void>;
@@ -16,7 +15,6 @@ interface PointsTableProps {
 
 const PointsTable = ({ 
   teams, 
-  refreshKey, 
   calculateTotalPoints, 
   handleBonusPointsChange, 
   saveBonusPoints 
@@ -45,7 +43,7 @@ const PointsTable = ({
               {teams
                 .sort((a, b) => calculateTotalPoints(b) - calculateTotalPoints(a))
                 .map((team, index) => (
-                  <TableRow key={`${team.id}-${refreshKey}-table`} className="border-b border-millionaire-accent">
+                  <TableRow key={team.id} className="border-b border-millionaire-accent">
                     <TableCell className="font-medium text-white">{index + 1}</TableCell>
                     <TableCell className="font-medium text-white">{team.name}</TableCell>
                     <TableCell className="font-bold text-white text-lg">{team.points || 0}</TableCell>
