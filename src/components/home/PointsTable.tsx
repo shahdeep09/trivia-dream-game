@@ -22,14 +22,16 @@ const PointsTable = ({
 }: PointsTableProps) => {
   const [localBonusPoints, setLocalBonusPoints] = useState<Record<string, number>>({});
 
-  // Initialize local bonus points when teams change
+  // Initialize local bonus points when teams change, but only if local state is empty
   useEffect(() => {
-    const initialBonusPoints: Record<string, number> = {};
-    teams.forEach(team => {
-      initialBonusPoints[team.id] = team.bonusPoints || 0;
-    });
-    setLocalBonusPoints(initialBonusPoints);
-  }, [teams]);
+    if (Object.keys(localBonusPoints).length === 0) {
+      const initialBonusPoints: Record<string, number> = {};
+      teams.forEach(team => {
+        initialBonusPoints[team.id] = team.bonusPoints || 0;
+      });
+      setLocalBonusPoints(initialBonusPoints);
+    }
+  }, [teams, localBonusPoints]);
 
   const handleLocalBonusChange = (teamId: string, value: string) => {
     const numValue = parseInt(value) || 0;
@@ -37,20 +39,14 @@ const PointsTable = ({
       ...prev,
       [teamId]: numValue
     }));
-    // Also update the parent state
-    handleBonusPointsChange(teamId, value);
+    // Don't call parent handler here - only update local state
   };
 
   const handleSave = async (teamId: string) => {
+    // Update parent state with the local value before saving
+    const localValue = localBonusPoints[teamId] || 0;
+    handleBonusPointsChange(teamId, localValue.toString());
     await saveBonusPoints(teamId);
-    // Update local state to match the saved value
-    const team = teams.find(t => t.id === teamId);
-    if (team) {
-      setLocalBonusPoints(prev => ({
-        ...prev,
-        [teamId]: team.bonusPoints || 0
-      }));
-    }
   };
 
   return (
