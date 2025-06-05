@@ -5,6 +5,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Team } from "@/utils/gameUtils";
+import { useState, useEffect } from "react";
 
 interface PointsTableProps {
   teams: Team[];
@@ -19,6 +20,39 @@ const PointsTable = ({
   handleBonusPointsChange, 
   saveBonusPoints 
 }: PointsTableProps) => {
+  const [localBonusPoints, setLocalBonusPoints] = useState<Record<string, number>>({});
+
+  // Initialize local bonus points when teams change
+  useEffect(() => {
+    const initialBonusPoints: Record<string, number> = {};
+    teams.forEach(team => {
+      initialBonusPoints[team.id] = team.bonusPoints || 0;
+    });
+    setLocalBonusPoints(initialBonusPoints);
+  }, [teams]);
+
+  const handleLocalBonusChange = (teamId: string, value: string) => {
+    const numValue = parseInt(value) || 0;
+    setLocalBonusPoints(prev => ({
+      ...prev,
+      [teamId]: numValue
+    }));
+    // Also update the parent state
+    handleBonusPointsChange(teamId, value);
+  };
+
+  const handleSave = async (teamId: string) => {
+    await saveBonusPoints(teamId);
+    // Update local state to match the saved value
+    const team = teams.find(t => t.id === teamId);
+    if (team) {
+      setLocalBonusPoints(prev => ({
+        ...prev,
+        [teamId]: team.bonusPoints || 0
+      }));
+    }
+  };
+
   return (
     <TabsContent value="points">
       <Card className="bg-millionaire-secondary border-millionaire-accent">
@@ -52,8 +86,8 @@ const PointsTable = ({
                         type="number"
                         min="0"
                         className="w-20 bg-millionaire-primary text-millionaire-gold border-millionaire-accent"
-                        value={team.bonusPoints || 0}
-                        onChange={(e) => handleBonusPointsChange(team.id, e.target.value)}
+                        value={localBonusPoints[team.id] || 0}
+                        onChange={(e) => handleLocalBonusChange(team.id, e.target.value)}
                       />
                     </TableCell>
                     <TableCell className="font-bold text-millionaire-gold text-xl">
@@ -67,7 +101,7 @@ const PointsTable = ({
                       <Button
                         size="sm"
                         className="bg-millionaire-accent hover:bg-millionaire-gold text-millionaire-primary"
-                        onClick={() => saveBonusPoints(team.id)}
+                        onClick={() => handleSave(team.id)}
                       >
                         Save
                       </Button>
