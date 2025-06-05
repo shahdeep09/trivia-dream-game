@@ -49,6 +49,12 @@ const PointsTable = ({
     await saveBonusPoints(teamId);
   };
 
+  // Calculate total points using local bonus points
+  const calculateLocalTotalPoints = (team: Team) => {
+    const localBonus = localBonusPoints[team.id] || team.bonusPoints || 0;
+    return (team.points || 0) + localBonus;
+  };
+
   return (
     <TabsContent value="points">
       <Card className="bg-millionaire-secondary border-millionaire-accent">
@@ -71,7 +77,7 @@ const PointsTable = ({
             </TableHeader>
             <TableBody>
               {teams
-                .sort((a, b) => calculateTotalPoints(b) - calculateTotalPoints(a))
+                .sort((a, b) => calculateLocalTotalPoints(b) - calculateLocalTotalPoints(a))
                 .map((team, index) => (
                   <TableRow key={team.id} className="border-b border-millionaire-accent">
                     <TableCell className="font-medium text-white">{index + 1}</TableCell>
@@ -87,7 +93,7 @@ const PointsTable = ({
                       />
                     </TableCell>
                     <TableCell className="font-bold text-millionaire-gold text-xl">
-                      {calculateTotalPoints(team)}
+                      {calculateLocalTotalPoints(team)}
                     </TableCell>
                     <TableCell className="font-bold text-lg text-white">{team.gamesPlayed || 0}</TableCell>
                     <TableCell className="font-bold text-white text-lg">
