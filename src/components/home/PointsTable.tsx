@@ -22,13 +22,13 @@ const PointsTable = ({
 }: PointsTableProps) => {
   const [localBonusPoints, setLocalBonusPoints] = useState<Record<string, number>>({});
 
-  // Sync local bonus points with teams data whenever teams change
+  // Initialize and sync local bonus points with teams data
   useEffect(() => {
-    const updatedBonusPoints: Record<string, number> = {};
+    const initialBonusPoints: Record<string, number> = {};
     teams.forEach(team => {
-      updatedBonusPoints[team.id] = team.bonusPoints || 0;
+      initialBonusPoints[team.id] = team.bonusPoints || 0;
     });
-    setLocalBonusPoints(updatedBonusPoints);
+    setLocalBonusPoints(initialBonusPoints);
   }, [teams]);
 
   const handleLocalBonusChange = (teamId: string, value: string) => {
@@ -43,7 +43,7 @@ const PointsTable = ({
     const localValue = localBonusPoints[teamId] || 0;
     // Update parent state first
     handleBonusPointsChange(teamId, localValue.toString());
-    // Then save to database
+    // Then save to database - this will trigger a reload in the parent
     await saveBonusPoints(teamId);
   };
 

@@ -193,8 +193,8 @@ const Home = () => {
         return;
       }
 
-      // Update localStorage
-      localStorage.setItem("millionaire-teams", JSON.stringify(teams));
+      // Reload teams data from database to ensure consistency
+      await loadTeams();
 
       toast({
         title: "Success",
@@ -208,7 +208,7 @@ const Home = () => {
         variant: "destructive"
       });
     }
-  }, [user, teams]);
+  }, [user, teams, loadTeams]);
 
   if (loading) {
     return (
