@@ -79,13 +79,31 @@ export const useTeamManagement = () => {
         return;
       }
 
+      // After successful database update, reload teams to ensure consistency
+      // This ensures both tabs show the same data
+      const { data: updatedTeamsData, error: fetchError } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (!fetchError && updatedTeamsData) {
+        const formattedTeams: Team[] = updatedTeamsData.map(team => ({
+          id: team.id,
+          name: team.name,
+          points: team.points || 0,
+          bonusPoints: team.bonus_points || 0,
+          gamesPlayed: team.games_played || 0,
+          totalLifelinesUsed: team.total_lifelines_used || 0
+        }));
+
+        setTeams(formattedTeams);
+        localStorage.setItem("millionaire-teams", JSON.stringify(formattedTeams));
+      }
+
       toast({
         title: "Success",
         description: "Bonus points saved successfully"
       });
-
-      // Update localStorage with the current teams state (which already has the updated bonus points)
-      localStorage.setItem("millionaire-teams", JSON.stringify(teams));
       
     } catch (error) {
       console.error('Error saving bonus points:', error);
