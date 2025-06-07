@@ -24,7 +24,7 @@ const Home = () => {
     teams,
     loadTeams,
     calculateTotalPoints,
-    handleBonusPointsChange,
+    updateTeamBonusPoints,
     saveBonusPoints
   } = useTeamManagement();
   
@@ -150,7 +150,7 @@ const Home = () => {
           <PointsTable 
             teams={teams}
             calculateTotalPoints={calculateTotalPoints}
-            handleBonusPointsChange={handleBonusPointsChange}
+            updateTeamBonusPoints={updateTeamBonusPoints}
             saveBonusPoints={saveBonusPoints}
           />
         </Tabs>

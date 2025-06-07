@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +35,7 @@ export const useTeamManagement = () => {
 
       setTeams(formattedTeams);
       
-      // Also save to localStorage for compatibility
+      // Keep localStorage in sync
       localStorage.setItem("millionaire-teams", JSON.stringify(formattedTeams));
     } catch (error) {
       console.error('Error loading teams:', error);
@@ -47,26 +46,22 @@ export const useTeamManagement = () => {
     return (team.points || 0) + (team.bonusPoints || 0);
   }, []);
 
-  const handleBonusPointsChange = useCallback((teamId: string, value: string) => {
-    const points = parseInt(value) || 0;
+  const updateTeamBonusPoints = useCallback((teamId: string, bonusPoints: number) => {
     setTeams(prevTeams =>
       prevTeams.map(team =>
-        team.id === teamId ? { ...team, bonusPoints: points } : team
+        team.id === teamId ? { ...team, bonusPoints } : team
       )
     );
   }, []);
 
-  const saveBonusPoints = useCallback(async (teamId: string) => {
-    if (!user) return;
-
-    const team = teams.find(t => t.id === teamId);
-    if (!team) return;
+  const saveBonusPoints = useCallback(async (teamId: string, bonusPoints: number) => {
+    if (!user) return false;
 
     try {
-      // Update the database with the bonus points
+      // Update database first
       const { error } = await supabase
         .from('teams')
-        .update({ bonus_points: team.bonusPoints || 0 })
+        .update({ bonus_points: bonusPoints })
         .eq('id', teamId)
         .eq('user_id', user.id);
 
@@ -77,17 +72,26 @@ export const useTeamManagement = () => {
           description: "Failed to save bonus points",
           variant: "destructive"
         });
-        return;
+        return false;
       }
 
-      // After successful save, update localStorage with current state
-      localStorage.setItem("millionaire-teams", JSON.stringify(teams));
+      // Update local state immediately
+      setTeams(prevTeams => {
+        const updatedTeams = prevTeams.map(team =>
+          team.id === teamId ? { ...team, bonusPoints } : team
+        );
+        
+        // Sync localStorage with updated state
+        localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
+        return updatedTeams;
+      });
 
       toast({
         title: "Success",
         description: "Bonus points saved successfully"
       });
       
+      return true;
     } catch (error) {
       console.error('Error saving bonus points:', error);
       toast({
@@ -95,15 +99,16 @@ export const useTeamManagement = () => {
         description: "Failed to save bonus points",
         variant: "destructive"
       });
+      return false;
     }
-  }, [user, teams]);
+  }, [user]);
 
   return {
     teams,
     setTeams,
     loadTeams,
     calculateTotalPoints,
-    handleBonusPointsChange,
+    updateTeamBonusPoints,
     saveBonusPoints
   };
 };

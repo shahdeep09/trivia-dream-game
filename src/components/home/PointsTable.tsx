@@ -5,63 +5,37 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Team } from "@/utils/gameUtils";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 
 interface PointsTableProps {
   teams: Team[];
   calculateTotalPoints: (team: Team) => number;
-  handleBonusPointsChange: (teamId: string, value: string) => void;
-  saveBonusPoints: (teamId: string) => Promise<void>;
+  updateTeamBonusPoints: (teamId: string, bonusPoints: number) => void;
+  saveBonusPoints: (teamId: string, bonusPoints: number) => Promise<boolean>;
 }
 
 const PointsTable = ({ 
   teams, 
-  calculateTotalPoints, 
-  handleBonusPointsChange, 
+  calculateTotalPoints,
+  updateTeamBonusPoints,
   saveBonusPoints 
 }: PointsTableProps) => {
-  const [localBonusPoints, setLocalBonusPoints] = useState<Record<string, number>>({});
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
-  const initializedRef = useRef<Set<string>>(new Set());
 
-  // Initialize local bonus points only for new teams
-  useEffect(() => {
-    teams.forEach(team => {
-      if (!initializedRef.current.has(team.id)) {
-        setLocalBonusPoints(prev => ({
-          ...prev,
-          [team.id]: team.bonusPoints || 0
-        }));
-        initializedRef.current.add(team.id);
-      }
-    });
-  }, [teams]);
-
-  const handleLocalBonusChange = (teamId: string, value: string) => {
-    const numValue = parseInt(value) || 0;
-    setLocalBonusPoints(prev => ({
-      ...prev,
-      [teamId]: numValue
-    }));
+  const handleBonusChange = (teamId: string, value: string) => {
+    const bonusPoints = parseInt(value) || 0;
+    updateTeamBonusPoints(teamId, bonusPoints);
   };
 
   const handleSave = async (teamId: string) => {
-    setSavingStates(prev => ({ ...prev, [teamId]: true }));
-    try {
-      const localValue = localBonusPoints[teamId] || 0;
-      // Update the main teams state first
-      handleBonusPointsChange(teamId, localValue.toString());
-      // Then save to database
-      await saveBonusPoints(teamId);
-    } finally {
-      setSavingStates(prev => ({ ...prev, [teamId]: false }));
-    }
-  };
+    const team = teams.find(t => t.id === teamId);
+    if (!team) return;
 
-  // Calculate total points using local bonus points for immediate feedback
-  const getDisplayTotalPoints = (team: Team) => {
-    const localBonus = localBonusPoints[team.id] !== undefined ? localBonusPoints[team.id] : team.bonusPoints || 0;
-    return (team.points || 0) + localBonus;
+    setSavingStates(prev => ({ ...prev, [teamId]: true }));
+    
+    const success = await saveBonusPoints(teamId, team.bonusPoints || 0);
+    
+    setSavingStates(prev => ({ ...prev, [teamId]: false }));
   };
 
   return (
@@ -86,7 +60,7 @@ const PointsTable = ({
             </TableHeader>
             <TableBody>
               {teams
-                .sort((a, b) => getDisplayTotalPoints(b) - getDisplayTotalPoints(a))
+                .sort((a, b) => calculateTotalPoints(b) - calculateTotalPoints(a))
                 .map((team, index) => (
                   <TableRow key={team.id} className="border-b border-millionaire-accent">
                     <TableCell className="font-medium text-white">{index + 1}</TableCell>
@@ -97,12 +71,12 @@ const PointsTable = ({
                         type="number"
                         min="0"
                         className="w-20 bg-millionaire-primary text-millionaire-gold border-millionaire-accent"
-                        value={localBonusPoints[team.id] !== undefined ? localBonusPoints[team.id] : team.bonusPoints || 0}
-                        onChange={(e) => handleLocalBonusChange(team.id, e.target.value)}
+                        value={team.bonusPoints || 0}
+                        onChange={(e) => handleBonusChange(team.id, e.target.value)}
                       />
                     </TableCell>
                     <TableCell className="font-bold text-millionaire-gold text-xl">
-                      {getDisplayTotalPoints(team)}
+                      {calculateTotalPoints(team)}
                     </TableCell>
                     <TableCell className="font-bold text-lg text-white">{team.gamesPlayed || 0}</TableCell>
                     <TableCell className="font-bold text-white text-lg">
