@@ -38,17 +38,25 @@ const PointsTable = ({
       ...prev,
       [teamId]: numValue
     }));
-    // Also update parent state immediately for real-time display
-    handleBonusPointsChange(teamId, value);
+    // Don't update parent state immediately - only on save
   };
 
   const handleSave = async (teamId: string) => {
     setSavingStates(prev => ({ ...prev, [teamId]: true }));
     try {
+      // Update parent state with the local value before saving
+      const localValue = localBonusPoints[teamId] || 0;
+      handleBonusPointsChange(teamId, localValue.toString());
       await saveBonusPoints(teamId);
     } finally {
       setSavingStates(prev => ({ ...prev, [teamId]: false }));
     }
+  };
+
+  // Calculate total points using local bonus points for real-time display
+  const calculateLocalTotalPoints = (team: Team) => {
+    const localBonus = localBonusPoints[team.id] !== undefined ? localBonusPoints[team.id] : team.bonusPoints || 0;
+    return (team.points || 0) + localBonus;
   };
 
   return (
@@ -73,7 +81,7 @@ const PointsTable = ({
             </TableHeader>
             <TableBody>
               {teams
-                .sort((a, b) => calculateTotalPoints(b) - calculateTotalPoints(a))
+                .sort((a, b) => calculateLocalTotalPoints(b) - calculateLocalTotalPoints(a))
                 .map((team, index) => (
                   <TableRow key={team.id} className="border-b border-millionaire-accent">
                     <TableCell className="font-medium text-white">{index + 1}</TableCell>
@@ -84,12 +92,12 @@ const PointsTable = ({
                         type="number"
                         min="0"
                         className="w-20 bg-millionaire-primary text-millionaire-gold border-millionaire-accent"
-                        value={team.bonusPoints || 0}
+                        value={localBonusPoints[team.id] !== undefined ? localBonusPoints[team.id] : team.bonusPoints || 0}
                         onChange={(e) => handleLocalBonusChange(team.id, e.target.value)}
                       />
                     </TableCell>
                     <TableCell className="font-bold text-millionaire-gold text-xl">
-                      {calculateTotalPoints(team)}
+                      {calculateLocalTotalPoints(team)}
                     </TableCell>
                     <TableCell className="font-bold text-lg text-white">{team.gamesPlayed || 0}</TableCell>
                     <TableCell className="font-bold text-white text-lg">
