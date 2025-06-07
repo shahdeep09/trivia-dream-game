@@ -84,18 +84,8 @@ export const useTeamManagement = () => {
         description: "Bonus points saved successfully"
       });
 
-      // Update the teams state to reflect the saved bonus points
-      setTeams(prevTeams =>
-        prevTeams.map(t =>
-          t.id === teamId ? { ...t, bonusPoints: team.bonusPoints } : t
-        )
-      );
-
-      // Update localStorage with the new teams data
-      const updatedTeams = teams.map(t => 
-        t.id === teamId ? { ...t, bonusPoints: team.bonusPoints } : t
-      );
-      localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
+      // Update localStorage with the current teams state (which already has the updated bonus points)
+      localStorage.setItem("millionaire-teams", JSON.stringify(teams));
       
     } catch (error) {
       console.error('Error saving bonus points:', error);
