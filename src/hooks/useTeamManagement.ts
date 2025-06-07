@@ -84,7 +84,14 @@ export const useTeamManagement = () => {
         description: "Bonus points saved successfully"
       });
 
-      // Update localStorage immediately after successful save
+      // Update the teams state to reflect the saved bonus points
+      setTeams(prevTeams =>
+        prevTeams.map(t =>
+          t.id === teamId ? { ...t, bonusPoints: team.bonusPoints } : t
+        )
+      );
+
+      // Update localStorage with the new teams data
       const updatedTeams = teams.map(t => 
         t.id === teamId ? { ...t, bonusPoints: team.bonusPoints } : t
       );
