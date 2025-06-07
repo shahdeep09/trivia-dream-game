@@ -24,17 +24,14 @@ const PointsTable = ({
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
   const initializedRef = useRef<Set<string>>(new Set());
 
-  // Initialize local bonus points only for new teams that haven't been initialized yet
+  // Sync local bonus points with teams data whenever teams change
   useEffect(() => {
+    const newLocalBonusPoints: Record<string, number> = {};
     teams.forEach(team => {
-      if (!initializedRef.current.has(team.id)) {
-        setLocalBonusPoints(prev => ({
-          ...prev,
-          [team.id]: team.bonusPoints || 0
-        }));
-        initializedRef.current.add(team.id);
-      }
+      newLocalBonusPoints[team.id] = team.bonusPoints || 0;
+      initializedRef.current.add(team.id);
     });
+    setLocalBonusPoints(newLocalBonusPoints);
   }, [teams]);
 
   const handleLocalBonusChange = (teamId: string, value: string) => {
@@ -49,15 +46,17 @@ const PointsTable = ({
     setSavingStates(prev => ({ ...prev, [teamId]: true }));
     try {
       const localValue = localBonusPoints[teamId] || 0;
+      // Update the main teams state first
       handleBonusPointsChange(teamId, localValue.toString());
+      // Then save to database
       await saveBonusPoints(teamId);
     } finally {
       setSavingStates(prev => ({ ...prev, [teamId]: false }));
     }
   };
 
-  // Calculate total points using local bonus points for real-time display
-  const calculateLocalTotalPoints = (team: Team) => {
+  // Calculate total points using the actual teams data
+  const getDisplayTotalPoints = (team: Team) => {
     const localBonus = localBonusPoints[team.id] !== undefined ? localBonusPoints[team.id] : team.bonusPoints || 0;
     return (team.points || 0) + localBonus;
   };
@@ -84,7 +83,7 @@ const PointsTable = ({
             </TableHeader>
             <TableBody>
               {teams
-                .sort((a, b) => calculateLocalTotalPoints(b) - calculateLocalTotalPoints(a))
+                .sort((a, b) => getDisplayTotalPoints(b) - getDisplayTotalPoints(a))
                 .map((team, index) => (
                   <TableRow key={team.id} className="border-b border-millionaire-accent">
                     <TableCell className="font-medium text-white">{index + 1}</TableCell>
@@ -100,7 +99,7 @@ const PointsTable = ({
                       />
                     </TableCell>
                     <TableCell className="font-bold text-millionaire-gold text-xl">
-                      {calculateLocalTotalPoints(team)}
+                      {getDisplayTotalPoints(team)}
                     </TableCell>
                     <TableCell className="font-bold text-lg text-white">{team.gamesPlayed || 0}</TableCell>
                     <TableCell className="font-bold text-white text-lg">

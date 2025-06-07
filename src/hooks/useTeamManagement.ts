@@ -63,6 +63,7 @@ export const useTeamManagement = () => {
     if (!team) return;
 
     try {
+      // Update the database with the bonus points
       const { error } = await supabase
         .from('teams')
         .update({ bonus_points: team.bonusPoints || 0 })
@@ -79,26 +80,8 @@ export const useTeamManagement = () => {
         return;
       }
 
-      // After successful database update, reload teams to ensure consistency
-      // This ensures both tabs show the same data
-      const { data: updatedTeamsData, error: fetchError } = await supabase
-        .from('teams')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (!fetchError && updatedTeamsData) {
-        const formattedTeams: Team[] = updatedTeamsData.map(team => ({
-          id: team.id,
-          name: team.name,
-          points: team.points || 0,
-          bonusPoints: team.bonus_points || 0,
-          gamesPlayed: team.games_played || 0,
-          totalLifelinesUsed: team.total_lifelines_used || 0
-        }));
-
-        setTeams(formattedTeams);
-        localStorage.setItem("millionaire-teams", JSON.stringify(formattedTeams));
-      }
+      // Update localStorage immediately with current teams state
+      localStorage.setItem("millionaire-teams", JSON.stringify(teams));
 
       toast({
         title: "Success",
