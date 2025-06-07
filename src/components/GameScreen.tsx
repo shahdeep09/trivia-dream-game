@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import { soundManager } from "@/utils/sound/SoundManager";
@@ -7,7 +6,7 @@ import MoneyLadder from "./MoneyLadder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Undo, CheckCircle, Play, Volume2, VolumeX } from "lucide-react";
+import { Undo, CheckCircle, Play, Volume2, VolumeX, ArrowRight } from "lucide-react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -60,6 +59,7 @@ const GameScreen = ({
   const [teamName, setTeamName] = useState<string>("");
   const [isMuted, setIsMuted] = useState(false);
   const [timeUpCalled, setTimeUpCalled] = useState(false);
+  const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const windowSize = useWindowSize();
@@ -78,6 +78,26 @@ const GameScreen = ({
     ...settings,
     soundEffects: settings.soundEffects && !isMuted
   };
+
+  // Determine if the continue button should be available
+  const isContinueAvailable = revealAnswer && lastAnswerCorrect && !dialogOpen && !gameOver;
+
+  // Add keyboard shortcut for continue
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.code === 'Space' && selectedOption !== null && !revealAnswer && gameStarted) {
+        event.preventDefault();
+        handleFinalAnswer();
+      }
+      if (event.code === 'Enter' && isContinueAvailable) {
+        event.preventDefault();
+        handleNextQuestion();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [selectedOption, revealAnswer, gameStarted, isContinueAvailable]);
 
   // Load team name when component mounts
   useEffect(() => {
@@ -160,19 +180,6 @@ const GameScreen = ({
     }
   }, [questions, quizConfig]);
 
-  // Add spacebar shortcut for final answer
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.code === 'Space' && selectedOption !== null && !revealAnswer && gameStarted) {
-        event.preventDefault();
-        handleFinalAnswer();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [selectedOption, revealAnswer, gameStarted]);
-
   const currentQuestion = gameQuestions[currentQuestionIndex];
   
   const handleStartGame = () => {
@@ -196,6 +203,7 @@ const GameScreen = ({
     setActionHistory([...actionHistory, answerAction]);
     
     const isCorrect = selectedIndex === currentQuestion.correctOptionIndex;
+    setLastAnswerCorrect(isCorrect);
     
     // Handle sound result using centralized system
     soundManager.handleAnswerResult(isCorrect, currentQuestionIndex);
@@ -243,6 +251,7 @@ const GameScreen = ({
     setDialogOpen(false);
     setShowExplanation(false);
     setTimeUpCalled(false); // Reset for next question
+    setLastAnswerCorrect(false); // Reset for next question
     
     if (gameOver) {
       setResultDialogOpen(true);
@@ -708,6 +717,17 @@ const GameScreen = ({
                 <CheckCircle size={16} />
                 Final Answer (Space)
               </Button>
+              {/* Continue Button - available when answer is revealed and was correct */}
+              {isContinueAvailable && (
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 animate-pulse"
+                  onClick={handleNextQuestion}
+                  title="Continue to next question (Enter key)"
+                >
+                  <ArrowRight size={16} />
+                  Continue
+                </Button>
+              )}
               <Button
                 variant="outline"
                 className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent"
