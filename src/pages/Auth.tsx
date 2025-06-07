@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const urlMode = searchParams.get('mode');
-  const [mode, setMode] = useState<'login' | 'signup' | 'reset' | 'change-password'>(() => {
+  const [mode, setMode] = useState<'login' | 'reset' | 'change-password'>(() => {
     if (urlMode === 'change-password') return 'change-password';
     return 'login';
   });

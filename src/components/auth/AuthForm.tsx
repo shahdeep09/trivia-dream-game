@@ -10,19 +10,18 @@ import { useNavigate } from 'react-router-dom';
 import { PasswordChangeForm } from './PasswordChangeForm';
 
 interface AuthFormProps {
-  mode: 'login' | 'signup' | 'reset' | 'change-password';
-  onModeChange: (mode: 'login' | 'signup' | 'reset' | 'change-password') => void;
+  mode: 'login' | 'reset' | 'change-password';
+  onModeChange: (mode: 'login' | 'reset' | 'change-password') => void;
 }
 
 export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   
-  const { signIn, signUp, resetPassword, user } = useAuth();
+  const { signIn, resetPassword, user } = useAuth();
   const navigate = useNavigate();
 
   // If user is authenticated and wants to change password, show the password change form
@@ -44,17 +43,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
         } else {
           setMessage('Password reset email sent. Check your inbox.');
         }
-      } else if (mode === 'signup') {
-        if (password !== confirmPassword) {
-          setError('Passwords do not match');
-          return;
-        }
-        const { error } = await signUp(email, password);
-        if (error) {
-          setError(error.message);
-        } else {
-          setMessage('Account created! Check your email to verify your account.');
-        }
       } else {
         const { error } = await signIn(email, password);
         if (error) {
@@ -73,7 +61,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
   const getTitle = () => {
     switch (mode) {
       case 'login': return 'Welcome Back';
-      case 'signup': return 'Create Account';
       case 'reset': return 'Reset Password';
       case 'change-password': return 'Change Password';
     }
@@ -82,7 +69,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
   const getDescription = () => {
     switch (mode) {
       case 'login': return 'Sign in to your account to continue';
-      case 'signup': return 'Create a new account to get started';
       case 'reset': return 'Enter your email to receive a password reset link';
       case 'change-password': return 'Enter your new password';
     }
@@ -124,20 +110,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
             </div>
           )}
 
-          {mode === 'signup' && (
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
-                required
-              />
-            </div>
-          )}
-
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -157,45 +129,19 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
           >
             {loading ? 'Please wait...' : 
               mode === 'login' ? 'Sign In' : 
-              mode === 'signup' ? 'Create Account' : 
               'Send Reset Link'
             }
           </Button>
 
           <div className="text-center space-y-2">
             {mode === 'login' && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onModeChange('reset')}
-                  className="text-sm text-millionaire-accent hover:underline"
-                >
-                  Forgot your password?
-                </button>
-                <div>
-                  <span className="text-sm text-gray-600">Don't have an account? </span>
-                  <button
-                    type="button"
-                    onClick={() => onModeChange('signup')}
-                    className="text-sm text-millionaire-accent hover:underline"
-                  >
-                    Sign up
-                  </button>
-                </div>
-              </>
-            )}
-
-            {mode === 'signup' && (
-              <div>
-                <span className="text-sm text-gray-600">Already have an account? </span>
-                <button
-                  type="button"
-                  onClick={() => onModeChange('login')}
-                  className="text-sm text-millionaire-accent hover:underline"
-                >
-                  Sign in
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => onModeChange('reset')}
+                className="text-sm text-millionaire-accent hover:underline"
+              >
+                Forgot your password?
+              </button>
             )}
 
             {mode === 'reset' && (
