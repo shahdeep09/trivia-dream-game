@@ -86,7 +86,7 @@ const Home = () => {
   }, [currentQuizConfig, quizHistory, user, loadTeams]);
 
   const forceRefresh = useCallback(async () => {
-    if (!user) return;
+    if (!user || !currentQuizConfig) return;
     
     setLoading(true);
     await loadQuizHistory();

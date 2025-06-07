@@ -21,8 +21,22 @@ const PointsTable = ({
   saveBonusPoints 
 }: PointsTableProps) => {
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
+  const [inputValues, setInputValues] = useState<Record<string, string>>({});
+
+  const getInputValue = (teamId: string) => {
+    // Use local input value if it exists, otherwise use team's bonus points
+    if (inputValues[teamId] !== undefined) {
+      return inputValues[teamId];
+    }
+    const team = teams.find(t => t.id === teamId);
+    return String(team?.bonusPoints || 0);
+  };
 
   const handleBonusChange = (teamId: string, value: string) => {
+    // Update local input state immediately
+    setInputValues(prev => ({ ...prev, [teamId]: value }));
+    
+    // Update the main team state
     const bonusPoints = parseInt(value) || 0;
     updateTeamBonusPoints(teamId, bonusPoints);
   };
@@ -34,6 +48,15 @@ const PointsTable = ({
     setSavingStates(prev => ({ ...prev, [teamId]: true }));
     
     const success = await saveBonusPoints(teamId, team.bonusPoints || 0);
+    
+    if (success) {
+      // Clear the local input value on successful save
+      setInputValues(prev => {
+        const newValues = { ...prev };
+        delete newValues[teamId];
+        return newValues;
+      });
+    }
     
     setSavingStates(prev => ({ ...prev, [teamId]: false }));
   };
@@ -71,7 +94,7 @@ const PointsTable = ({
                         type="number"
                         min="0"
                         className="w-20 bg-millionaire-primary text-millionaire-gold border-millionaire-accent"
-                        value={team.bonusPoints || 0}
+                        value={getInputValue(team.id)}
                         onChange={(e) => handleBonusChange(team.id, e.target.value)}
                       />
                     </TableCell>

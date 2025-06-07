@@ -47,18 +47,22 @@ export const useTeamManagement = () => {
   }, []);
 
   const updateTeamBonusPoints = useCallback((teamId: string, bonusPoints: number) => {
-    setTeams(prevTeams =>
-      prevTeams.map(team =>
+    setTeams(prevTeams => {
+      const updatedTeams = prevTeams.map(team =>
         team.id === teamId ? { ...team, bonusPoints } : team
-      )
-    );
+      );
+      
+      // Update localStorage immediately
+      localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
+      return updatedTeams;
+    });
   }, []);
 
   const saveBonusPoints = useCallback(async (teamId: string, bonusPoints: number) => {
     if (!user) return false;
 
     try {
-      // Update database first
+      // Update database
       const { error } = await supabase
         .from('teams')
         .update({ bonus_points: bonusPoints })
@@ -75,16 +79,8 @@ export const useTeamManagement = () => {
         return false;
       }
 
-      // Update local state immediately
-      setTeams(prevTeams => {
-        const updatedTeams = prevTeams.map(team =>
-          team.id === teamId ? { ...team, bonusPoints } : team
-        );
-        
-        // Sync localStorage with updated state
-        localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
-        return updatedTeams;
-      });
+      // The local state is already updated by updateTeamBonusPoints
+      // No need to reload teams here - this was causing the input reset issue
 
       toast({
         title: "Success",
