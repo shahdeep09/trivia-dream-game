@@ -17,7 +17,7 @@ export interface Team {
   name: string;
   points: number;
   gamesPlayed: number;
-  bonusPoints?: number;
+  bonusPoints: number; // Re-added bonus points
   totalLifelinesUsed?: number; // New field for tracking lifeline usage
 }
 

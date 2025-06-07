@@ -22,7 +22,9 @@ const Home = () => {
   const {
     teams,
     loadTeams,
-    calculateTotalPoints
+    updateTeamBonusPoints,
+    calculateTotalPoints,
+    updatingTeam
   } = useTeamManagement();
   
   const [currentQuizConfig, setCurrentQuizConfig] = useState<QuizConfig | null>(null);
@@ -147,6 +149,8 @@ const Home = () => {
           <PointsTable 
             teams={teams}
             calculateTotalPoints={calculateTotalPoints}
+            updateTeamBonusPoints={updateTeamBonusPoints}
+            updatingTeam={updatingTeam}
           />
         </Tabs>
       </div>

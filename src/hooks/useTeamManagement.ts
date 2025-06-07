@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,7 @@ import { QuizConfig } from "@/types/quiz";
 export const useTeamManagement = () => {
   const { user } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
+  const [updatingTeam, setUpdatingTeam] = useState<string | null>(null);
 
   const loadTeams = useCallback(async (currentQuizConfig: QuizConfig | null) => {
     if (!currentQuizConfig || !user) return;
@@ -28,7 +30,7 @@ export const useTeamManagement = () => {
         id: team.id,
         name: team.name,
         points: team.points || 0,
-        bonusPoints: 0, // Always 0 since we're removing bonus points
+        bonusPoints: team.bonus_points || 0, // Load bonus points from database
         gamesPlayed: team.games_played || 0,
         totalLifelinesUsed: team.total_lifelines_used || 0
       })) || [];
@@ -42,14 +44,74 @@ export const useTeamManagement = () => {
     }
   }, [user]);
 
+  const updateTeamBonusPoints = useCallback(async (teamId: string, bonusPoints: number) => {
+    if (!user) return false;
+
+    setUpdatingTeam(teamId);
+
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .update({ bonus_points: bonusPoints })
+        .eq('id', teamId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error updating bonus points:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update bonus points. Please try again.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Update local state
+      setTeams(prevTeams => 
+        prevTeams.map(team => 
+          team.id === teamId 
+            ? { ...team, bonusPoints } 
+            : team
+        )
+      );
+
+      // Update localStorage
+      const updatedTeams = teams.map(team => 
+        team.id === teamId 
+          ? { ...team, bonusPoints } 
+          : team
+      );
+      localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
+
+      toast({
+        title: "Success",
+        description: "Bonus points updated successfully!",
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error updating bonus points:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update bonus points. Please try again.",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setUpdatingTeam(null);
+    }
+  }, [user, teams]);
+
   const calculateTotalPoints = useCallback((team: Team) => {
-    return team.points || 0; // Only game points, no bonus points
+    return (team.points || 0) + (team.bonusPoints || 0); // Include bonus points in total
   }, []);
 
   return {
     teams,
     setTeams,
     loadTeams,
-    calculateTotalPoints
+    updateTeamBonusPoints,
+    calculateTotalPoints,
+    updatingTeam
   };
 };
