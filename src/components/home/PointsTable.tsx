@@ -24,14 +24,17 @@ const PointsTable = ({
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
   const initializedRef = useRef<Set<string>>(new Set());
 
-  // Sync local bonus points with teams data whenever teams change
+  // Initialize local bonus points only for new teams
   useEffect(() => {
-    const newLocalBonusPoints: Record<string, number> = {};
     teams.forEach(team => {
-      newLocalBonusPoints[team.id] = team.bonusPoints || 0;
-      initializedRef.current.add(team.id);
+      if (!initializedRef.current.has(team.id)) {
+        setLocalBonusPoints(prev => ({
+          ...prev,
+          [team.id]: team.bonusPoints || 0
+        }));
+        initializedRef.current.add(team.id);
+      }
     });
-    setLocalBonusPoints(newLocalBonusPoints);
   }, [teams]);
 
   const handleLocalBonusChange = (teamId: string, value: string) => {
@@ -55,7 +58,7 @@ const PointsTable = ({
     }
   };
 
-  // Calculate total points using the actual teams data
+  // Calculate total points using local bonus points for immediate feedback
   const getDisplayTotalPoints = (team: Team) => {
     const localBonus = localBonusPoints[team.id] !== undefined ? localBonusPoints[team.id] : team.bonusPoints || 0;
     return (team.points || 0) + localBonus;

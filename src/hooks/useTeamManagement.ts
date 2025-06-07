@@ -80,7 +80,7 @@ export const useTeamManagement = () => {
         return;
       }
 
-      // Update localStorage immediately with current teams state
+      // After successful save, update localStorage with current state
       localStorage.setItem("millionaire-teams", JSON.stringify(teams));
 
       toast({
