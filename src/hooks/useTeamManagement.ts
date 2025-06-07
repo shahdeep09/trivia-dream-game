@@ -28,7 +28,7 @@ export const useTeamManagement = () => {
         id: team.id,
         name: team.name,
         points: team.points || 0,
-        bonusPoints: team.bonus_points || 0,
+        bonusPoints: 0, // Always 0 since we're removing bonus points
         gamesPlayed: team.games_played || 0,
         totalLifelinesUsed: team.total_lifelines_used || 0
       })) || [];
@@ -43,68 +43,13 @@ export const useTeamManagement = () => {
   }, [user]);
 
   const calculateTotalPoints = useCallback((team: Team) => {
-    return (team.points || 0) + (team.bonusPoints || 0);
+    return team.points || 0; // Only game points, no bonus points
   }, []);
-
-  const updateTeamBonusPoints = useCallback((teamId: string, bonusPoints: number) => {
-    setTeams(prevTeams => {
-      const updatedTeams = prevTeams.map(team =>
-        team.id === teamId ? { ...team, bonusPoints } : team
-      );
-      
-      // Update localStorage immediately
-      localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
-      return updatedTeams;
-    });
-  }, []);
-
-  const saveBonusPoints = useCallback(async (teamId: string, bonusPoints: number) => {
-    if (!user) return false;
-
-    try {
-      // Update database
-      const { error } = await supabase
-        .from('teams')
-        .update({ bonus_points: bonusPoints })
-        .eq('id', teamId)
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Error saving bonus points:', error);
-        toast({
-          title: "Error",
-          description: "Failed to save bonus points",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      // The local state is already updated by updateTeamBonusPoints
-      // No need to reload teams here - this was causing the input reset issue
-
-      toast({
-        title: "Success",
-        description: "Bonus points saved successfully"
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Error saving bonus points:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save bonus points",
-        variant: "destructive"
-      });
-      return false;
-    }
-  }, [user]);
 
   return {
     teams,
     setTeams,
     loadTeams,
-    calculateTotalPoints,
-    updateTeamBonusPoints,
-    saveBonusPoints
+    calculateTotalPoints
   };
 };

@@ -19,9 +19,7 @@ const TeamCard = React.memo(({ team, calculateTotalPoints }: TeamCardProps) => {
       <CardContent>
         <div className="flex justify-between items-center">
           <div className="space-y-1">
-            <p><span className="font-medium text-white">Game Points:</span> <span className="font-bold text-white">{team.points || 0}</span></p>
-            <p><span className="font-medium text-white">Bonus Points:</span> <span className="font-bold text-white">{team.bonusPoints || 0}</span></p>
-            <p><span className="font-medium text-millionaire-gold">Total Points:</span> <span className="font-bold text-millionaire-gold text-lg">{calculateTotalPoints(team)}</span></p>
+            <p><span className="font-medium text-millionaire-gold">Points:</span> <span className="font-bold text-millionaire-gold text-lg">{calculateTotalPoints(team)}</span></p>
             <p><span className="font-medium text-white">Games Played:</span> <span className="font-bold text-white">{team.gamesPlayed || 0}</span></p>
             <p><span className="font-medium text-white">Lifelines Used:</span> <span className="font-bold text-white">{team.totalLifelinesUsed || 0}</span></p>
           </div>

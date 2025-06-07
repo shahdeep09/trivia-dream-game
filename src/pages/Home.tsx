@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -23,9 +22,7 @@ const Home = () => {
   const {
     teams,
     loadTeams,
-    calculateTotalPoints,
-    updateTeamBonusPoints,
-    saveBonusPoints
+    calculateTotalPoints
   } = useTeamManagement();
   
   const [currentQuizConfig, setCurrentQuizConfig] = useState<QuizConfig | null>(null);
@@ -150,8 +147,6 @@ const Home = () => {
           <PointsTable 
             teams={teams}
             calculateTotalPoints={calculateTotalPoints}
-            updateTeamBonusPoints={updateTeamBonusPoints}
-            saveBonusPoints={saveBonusPoints}
           />
         </Tabs>
       </div>
