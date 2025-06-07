@@ -65,8 +65,9 @@ const GameScreen = ({
   const windowSize = useWindowSize();
   const { user } = useAuth();
   
-  // Use ref to prevent multiple time-up calls
+  // Use ref to prevent multiple time-up calls with stronger protection
   const timeUpCalledRef = useRef(false);
+  const timeUpProcessingRef = useRef(false);
   
   // Lifelines - map to generic types but track by quiz config
   const [lifelinesUsed, setLifelinesUsed] = useState<Record<string, boolean>>({});
@@ -255,6 +256,7 @@ const GameScreen = ({
     setShowExplanation(false);
     setTimeUpCalled(false); // Reset for next question
     timeUpCalledRef.current = false; // Reset ref for next question
+    timeUpProcessingRef.current = false; // Reset processing ref
     setLastAnswerCorrect(false); // Reset for next question
     
     if (gameOver) {
@@ -278,14 +280,26 @@ const GameScreen = ({
   };
 
   const handleTimeUp = () => {
-    // Use ref to prevent multiple calls immediately
-    if (timeUpCalledRef.current) return;
+    console.log('GameScreen.handleTimeUp called:', {
+      timeUpCalled: timeUpCalledRef.current,
+      processing: timeUpProcessingRef.current,
+      gameOver
+    });
     
-    // Set both state and ref immediately
+    // Strongest protection against multiple calls
+    if (timeUpCalledRef.current || timeUpProcessingRef.current || gameOver) {
+      console.log('GameScreen.handleTimeUp: Prevented duplicate call');
+      return;
+    }
+    
+    // Set both refs immediately to prevent any race conditions
     timeUpCalledRef.current = true;
+    timeUpProcessingRef.current = true;
     setTimeUpCalled(true);
-    setGameOver(true);
     
+    console.log('GameScreen.handleTimeUp: Processing time up event');
+    
+    setGameOver(true);
     soundManager.handleTimeUp();
     setDialogMessage(
       `Time's up! You ran out of time.
@@ -298,6 +312,11 @@ const GameScreen = ({
       data: { timeout: true, questionIndex: currentQuestionIndex }
     };
     setActionHistory([...actionHistory, timeoutAction]);
+    
+    // Reset processing flag after a delay
+    setTimeout(() => {
+      timeUpProcessingRef.current = false;
+    }, 1000);
   };
 
   const handleUseLifeline = (lifelineId: string, result: any) => {

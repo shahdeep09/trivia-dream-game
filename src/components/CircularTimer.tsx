@@ -14,22 +14,40 @@ const CircularTimer = ({ timeLeft, totalTime, isPaused, onTimeUp, isActive = tru
   const circumference = 2 * Math.PI * 45; // radius = 45
   const strokeDashoffset = circumference - (progress / 100) * circumference;
   const hasCalledTimeUp = useRef(false);
+  const lastTimeLeft = useRef(timeLeft);
 
-  // Reset the ref when timer is restarted (timeLeft increases or isActive changes)
+  // Reset the ref when timer is restarted or time increases
+  useEffect(() => {
+    if (timeLeft > lastTimeLeft.current || timeLeft > 0) {
+      hasCalledTimeUp.current = false;
+      console.log('CircularTimer: Reset timeUp protection, timeLeft:', timeLeft);
+    }
+    lastTimeLeft.current = timeLeft;
+  }, [timeLeft]);
+
+  // Reset when isActive changes
   useEffect(() => {
     if (isActive && timeLeft > 0) {
       hasCalledTimeUp.current = false;
+      console.log('CircularTimer: Reset timeUp protection due to isActive change');
     }
-  }, [isActive, timeLeft > 0]);
+  }, [isActive]);
 
-  // Handle time up event with protection against multiple calls
+  // Handle time up event with strong protection against multiple calls
   useEffect(() => {
-    if (isActive && timeLeft <= 0 && !hasCalledTimeUp.current && onTimeUp) {
+    if (isActive && timeLeft <= 0 && !hasCalledTimeUp.current && onTimeUp && !isPaused) {
       hasCalledTimeUp.current = true;
-      console.log('CircularTimer: Calling onTimeUp()');
-      onTimeUp();
+      console.log('CircularTimer: Calling onTimeUp() - timeLeft:', timeLeft, 'hasCalledTimeUp:', hasCalledTimeUp.current);
+      
+      // Add a small delay to ensure this is the final call
+      setTimeout(() => {
+        if (hasCalledTimeUp.current) {
+          console.log('CircularTimer: Actually executing onTimeUp()');
+          onTimeUp();
+        }
+      }, 50);
     }
-  }, [timeLeft, isActive, onTimeUp]);
+  }, [timeLeft, isActive, onTimeUp, isPaused]);
 
   return (
     <div className="flex flex-col items-center">
