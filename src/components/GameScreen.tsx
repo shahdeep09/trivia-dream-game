@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import { soundManager } from "@/utils/sound/SoundManager";
 import Question from "./Question";
@@ -64,6 +64,9 @@ const GameScreen = ({
   const navigate = useNavigate();
   const windowSize = useWindowSize();
   const { user } = useAuth();
+  
+  // Use ref to prevent multiple time-up calls
+  const timeUpCalledRef = useRef(false);
   
   // Lifelines - map to generic types but track by quiz config
   const [lifelinesUsed, setLifelinesUsed] = useState<Record<string, boolean>>({});
@@ -251,6 +254,7 @@ const GameScreen = ({
     setDialogOpen(false);
     setShowExplanation(false);
     setTimeUpCalled(false); // Reset for next question
+    timeUpCalledRef.current = false; // Reset ref for next question
     setLastAnswerCorrect(false); // Reset for next question
     
     if (gameOver) {
@@ -274,10 +278,14 @@ const GameScreen = ({
   };
 
   const handleTimeUp = () => {
-    if (timeUpCalled) return; // Prevent multiple calls
+    // Use ref to prevent multiple calls immediately
+    if (timeUpCalledRef.current) return;
     
+    // Set both state and ref immediately
+    timeUpCalledRef.current = true;
     setTimeUpCalled(true);
     setGameOver(true);
+    
     soundManager.handleTimeUp();
     setDialogMessage(
       `Time's up! You ran out of time.
@@ -717,17 +725,20 @@ const GameScreen = ({
                 <CheckCircle size={16} />
                 Final Answer (Space)
               </Button>
-              {/* Continue Button - available when answer is revealed and was correct */}
-              {isContinueAvailable && (
-                <Button
-                  className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 animate-pulse"
-                  onClick={handleNextQuestion}
-                  title="Continue to next question (Enter key)"
-                >
-                  <ArrowRight size={16} />
-                  Continue
-                </Button>
-              )}
+              {/* Continue Button - always visible but disabled when not available */}
+              <Button
+                className={`${
+                  isContinueAvailable 
+                    ? "bg-green-600 hover:bg-green-700 text-white" 
+                    : "bg-gray-600 text-gray-400 cursor-not-allowed"
+                } flex items-center gap-2 transition-colors duration-200`}
+                onClick={handleNextQuestion}
+                disabled={!isContinueAvailable}
+                title={isContinueAvailable ? "Continue to next question (Enter key)" : "Answer correctly to continue"}
+              >
+                <ArrowRight size={16} />
+                Continue
+              </Button>
               <Button
                 variant="outline"
                 className="border-millionaire-accent text-millionaire-gold hover:bg-millionaire-accent"
