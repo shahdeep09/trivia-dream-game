@@ -5,7 +5,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Team } from "@/utils/gameUtils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface PointsTableProps {
   teams: Team[];
@@ -22,14 +22,19 @@ const PointsTable = ({
 }: PointsTableProps) => {
   const [localBonusPoints, setLocalBonusPoints] = useState<Record<string, number>>({});
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
+  const initializedRef = useRef<Set<string>>(new Set());
 
-  // Initialize local bonus points with teams data
+  // Initialize local bonus points only for new teams that haven't been initialized yet
   useEffect(() => {
-    const initialBonusPoints: Record<string, number> = {};
     teams.forEach(team => {
-      initialBonusPoints[team.id] = team.bonusPoints || 0;
+      if (!initializedRef.current.has(team.id)) {
+        setLocalBonusPoints(prev => ({
+          ...prev,
+          [team.id]: team.bonusPoints || 0
+        }));
+        initializedRef.current.add(team.id);
+      }
     });
-    setLocalBonusPoints(initialBonusPoints);
   }, [teams]);
 
   const handleLocalBonusChange = (teamId: string, value: string) => {
@@ -38,13 +43,11 @@ const PointsTable = ({
       ...prev,
       [teamId]: numValue
     }));
-    // Don't update parent state immediately - only on save
   };
 
   const handleSave = async (teamId: string) => {
     setSavingStates(prev => ({ ...prev, [teamId]: true }));
     try {
-      // Update parent state with the local value before saving
       const localValue = localBonusPoints[teamId] || 0;
       handleBonusPointsChange(teamId, localValue.toString());
       await saveBonusPoints(teamId);

@@ -83,6 +83,13 @@ export const useTeamManagement = () => {
         title: "Success",
         description: "Bonus points saved successfully"
       });
+
+      // Update localStorage immediately after successful save
+      const updatedTeams = teams.map(t => 
+        t.id === teamId ? { ...t, bonusPoints: team.bonusPoints } : t
+      );
+      localStorage.setItem("millionaire-teams", JSON.stringify(updatedTeams));
+      
     } catch (error) {
       console.error('Error saving bonus points:', error);
       toast({
