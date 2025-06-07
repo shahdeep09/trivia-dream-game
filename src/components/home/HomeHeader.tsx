@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Settings, RefreshCw, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import { QuizConfig } from "@/types/quiz";
+import { UserMenu } from "@/components/auth/UserMenu";
 
-interface QuizHeaderProps {
+interface HomeHeaderProps {
   currentQuizConfig: QuizConfig;
   forceRefresh: () => void;
 }
 
-const QuizHeader = ({ currentQuizConfig, forceRefresh }: QuizHeaderProps) => {
+const HomeHeader = ({ currentQuizConfig, forceRefresh }: HomeHeaderProps) => {
   return (
     <div className="flex justify-between items-center mb-8">
       <div className="flex items-center space-x-4">
@@ -58,9 +59,10 @@ const QuizHeader = ({ currentQuizConfig, forceRefresh }: QuizHeaderProps) => {
             Play Game
           </Link>
         </Button>
+        <UserMenu />
       </div>
     </div>
   );
 };
 
-export default QuizHeader;
+export default HomeHeader;
