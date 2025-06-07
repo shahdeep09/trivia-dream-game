@@ -1,16 +1,35 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface CircularTimerProps {
   timeLeft: number;
   totalTime: number;
   isPaused: boolean;
+  onTimeUp?: () => void;
+  isActive?: boolean;
 }
 
-const CircularTimer = ({ timeLeft, totalTime, isPaused }: CircularTimerProps) => {
+const CircularTimer = ({ timeLeft, totalTime, isPaused, onTimeUp, isActive = true }: CircularTimerProps) => {
   const progress = (timeLeft / totalTime) * 100;
   const circumference = 2 * Math.PI * 45; // radius = 45
   const strokeDashoffset = circumference - (progress / 100) * circumference;
+  const hasCalledTimeUp = useRef(false);
+
+  // Reset the ref when timer is restarted (timeLeft increases or isActive changes)
+  useEffect(() => {
+    if (isActive && timeLeft > 0) {
+      hasCalledTimeUp.current = false;
+    }
+  }, [isActive, timeLeft > 0]);
+
+  // Handle time up event with protection against multiple calls
+  useEffect(() => {
+    if (isActive && timeLeft <= 0 && !hasCalledTimeUp.current && onTimeUp) {
+      hasCalledTimeUp.current = true;
+      console.log('CircularTimer: Calling onTimeUp()');
+      onTimeUp();
+    }
+  }, [timeLeft, isActive, onTimeUp]);
 
   return (
     <div className="flex flex-col items-center">
