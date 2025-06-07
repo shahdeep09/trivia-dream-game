@@ -21,8 +21,9 @@ const PointsTable = ({
   saveBonusPoints 
 }: PointsTableProps) => {
   const [localBonusPoints, setLocalBonusPoints] = useState<Record<string, number>>({});
+  const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
 
-  // Initialize and sync local bonus points with teams data
+  // Initialize local bonus points with teams data
   useEffect(() => {
     const initialBonusPoints: Record<string, number> = {};
     teams.forEach(team => {
@@ -37,20 +38,17 @@ const PointsTable = ({
       ...prev,
       [teamId]: numValue
     }));
+    // Also update parent state immediately for real-time display
+    handleBonusPointsChange(teamId, value);
   };
 
   const handleSave = async (teamId: string) => {
-    const localValue = localBonusPoints[teamId] || 0;
-    // Update parent state first
-    handleBonusPointsChange(teamId, localValue.toString());
-    // Then save to database - this will trigger a reload in the parent
-    await saveBonusPoints(teamId);
-  };
-
-  // Calculate total points using local bonus points for real-time display
-  const calculateLocalTotalPoints = (team: Team) => {
-    const localBonus = localBonusPoints[team.id] !== undefined ? localBonusPoints[team.id] : team.bonusPoints || 0;
-    return (team.points || 0) + localBonus;
+    setSavingStates(prev => ({ ...prev, [teamId]: true }));
+    try {
+      await saveBonusPoints(teamId);
+    } finally {
+      setSavingStates(prev => ({ ...prev, [teamId]: false }));
+    }
   };
 
   return (
@@ -75,7 +73,7 @@ const PointsTable = ({
             </TableHeader>
             <TableBody>
               {teams
-                .sort((a, b) => calculateLocalTotalPoints(b) - calculateLocalTotalPoints(a))
+                .sort((a, b) => calculateTotalPoints(b) - calculateTotalPoints(a))
                 .map((team, index) => (
                   <TableRow key={team.id} className="border-b border-millionaire-accent">
                     <TableCell className="font-medium text-white">{index + 1}</TableCell>
@@ -86,12 +84,12 @@ const PointsTable = ({
                         type="number"
                         min="0"
                         className="w-20 bg-millionaire-primary text-millionaire-gold border-millionaire-accent"
-                        value={localBonusPoints[team.id] !== undefined ? localBonusPoints[team.id] : team.bonusPoints || 0}
+                        value={team.bonusPoints || 0}
                         onChange={(e) => handleLocalBonusChange(team.id, e.target.value)}
                       />
                     </TableCell>
                     <TableCell className="font-bold text-millionaire-gold text-xl">
-                      {calculateLocalTotalPoints(team)}
+                      {calculateTotalPoints(team)}
                     </TableCell>
                     <TableCell className="font-bold text-lg text-white">{team.gamesPlayed || 0}</TableCell>
                     <TableCell className="font-bold text-white text-lg">
@@ -102,8 +100,9 @@ const PointsTable = ({
                         size="sm"
                         className="bg-millionaire-accent hover:bg-millionaire-gold text-millionaire-primary"
                         onClick={() => handleSave(team.id)}
+                        disabled={savingStates[team.id]}
                       >
-                        Save
+                        {savingStates[team.id] ? "Saving..." : "Save"}
                       </Button>
                     </TableCell>
                   </TableRow>

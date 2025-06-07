@@ -193,9 +193,6 @@ const Home = () => {
         return;
       }
 
-      // Reload teams data from database to ensure consistency
-      await loadTeams();
-
       toast({
         title: "Success",
         description: "Bonus points saved successfully"
@@ -208,7 +205,7 @@ const Home = () => {
         variant: "destructive"
       });
     }
-  }, [user, teams, loadTeams]);
+  }, [user, teams]);
 
   if (loading) {
     return (
