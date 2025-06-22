@@ -689,8 +689,8 @@ const GameScreen = ({
         <div className="flex items-center gap-4">
           {teamName && (
             <div className="bg-millionaire-secondary px-4 py-2 rounded-lg text-center">
-              <span className="text-millionaire-gold font-bold mr-2">Team:</span>
-              <span className="text-white font-medium">{teamName}</span>
+              <span className="text-millionaire-gold font-bold mr-2 text-lg">Team:</span>
+              <span className="text-white font-medium text-lg">{teamName}</span>
             </div>
           )}
           
@@ -829,18 +829,18 @@ const GameScreen = ({
       
       {/* Decision Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-millionaire-primary border-millionaire-accent">
+        <DialogContent className="bg-millionaire-primary border-millionaire-accent max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-millionaire-gold">{gameOver ? "Game Over" : "Correct!"}</DialogTitle>
-            <DialogDescription className="text-millionaire-light text-lg whitespace-pre-line">
+            <DialogTitle className="text-millionaire-gold text-xl">{gameOver ? "Game Over" : "Correct!"}</DialogTitle>
+            <DialogDescription className="text-millionaire-light text-lg whitespace-pre-line leading-relaxed">
               {dialogMessage}
             </DialogDescription>
           </DialogHeader>
           
           {showExplanation && currentQuestion.explanation && (
-            <div className="mt-4 p-4 bg-millionaire-secondary rounded-md">
-              <h3 className="font-bold text-millionaire-gold mb-2">Explanation:</h3>
-              <p className="text-millionaire-light">{currentQuestion.explanation}</p>
+            <div className="mt-4 p-6 bg-millionaire-secondary rounded-md">
+              <h3 className="font-bold text-millionaire-gold mb-2 text-xl">Explanation:</h3>
+              <p className="text-millionaire-light text-lg leading-relaxed">{currentQuestion.explanation}</p>
             </div>
           )}
           

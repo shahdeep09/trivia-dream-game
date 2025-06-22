@@ -164,7 +164,11 @@ const Lifeline = ({ lifelineId, isUsed, onUse, currentQuestion, settings, quizCo
   return (
     <>
       <button
-        className={`w-16 h-16 rounded-full border-2 border-millionaire-accent bg-millionaire-primary flex flex-col items-center justify-center ${isUsed ? "opacity-50" : "hover:bg-millionaire-secondary transition-colors"}`}
+        className={`w-16 h-16 rounded-full border-4 border-yellow-400 bg-millionaire-primary flex flex-col items-center justify-center ${
+          isUsed 
+            ? "opacity-50 border-gray-400" 
+            : "hover:bg-millionaire-secondary hover:border-yellow-300 transition-colors"
+        }`}
         onClick={handleUseLifeline}
         disabled={isUsed}
         title={getLifelineName()}
