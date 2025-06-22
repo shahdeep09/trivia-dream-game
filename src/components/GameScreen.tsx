@@ -833,7 +833,7 @@ const GameScreen = ({
         <DialogContent className="bg-millionaire-primary border-millionaire-accent max-w-[90vw] max-h-[90vh] w-full h-full overflow-y-auto">
           <DialogHeader className="text-center">
             <DialogTitle className="text-millionaire-gold text-[40px] mb-4">{gameOver ? "Game Over" : "Correct!"}</DialogTitle>
-            <DialogDescription className="text-millionaire-light text-xl whitespace-pre-line leading-relaxed text-center">
+            <DialogDescription className="text-millionaire-light text-3xl whitespace-pre-line leading-relaxed text-center">
               {dialogMessage}
             </DialogDescription>
           </DialogHeader>
