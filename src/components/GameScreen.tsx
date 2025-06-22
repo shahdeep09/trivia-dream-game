@@ -840,7 +840,7 @@ const GameScreen = ({
           
           {showExplanation && currentQuestion.explanation && (
             <div className="mt-8 p-8 bg-millionaire-secondary rounded-md text-center">
-              <h3 className="font-bold text-millionaire-gold mb-4 text-2xl">Explanation:</h3>
+              <h3 className="font-bold text-millionaire-gold mb-4 text-5xl">Explanation:</h3>
               <p className="text-millionaire-light text-xl leading-relaxed">{currentQuestion.explanation}</p>
             </div>
           )}
