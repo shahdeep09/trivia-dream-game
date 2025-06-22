@@ -829,25 +829,25 @@ const GameScreen = ({
       
       {/* Decision Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-millionaire-primary border-millionaire-accent max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-millionaire-gold text-xl">{gameOver ? "Game Over" : "Correct!"}</DialogTitle>
-            <DialogDescription className="text-millionaire-light text-lg whitespace-pre-line leading-relaxed">
+        <DialogContent className="bg-millionaire-primary border-millionaire-accent max-w-[90vw] max-h-[90vh] w-full h-full overflow-y-auto">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-millionaire-gold text-3xl mb-4">{gameOver ? "Game Over" : "Correct!"}</DialogTitle>
+            <DialogDescription className="text-millionaire-light text-xl whitespace-pre-line leading-relaxed text-center">
               {dialogMessage}
             </DialogDescription>
           </DialogHeader>
           
           {showExplanation && currentQuestion.explanation && (
-            <div className="mt-4 p-6 bg-millionaire-secondary rounded-md">
-              <h3 className="font-bold text-millionaire-gold mb-2 text-xl">Explanation:</h3>
-              <p className="text-millionaire-light text-lg leading-relaxed">{currentQuestion.explanation}</p>
+            <div className="mt-8 p-8 bg-millionaire-secondary rounded-md text-center">
+              <h3 className="font-bold text-millionaire-gold mb-4 text-2xl">Explanation:</h3>
+              <p className="text-millionaire-light text-xl leading-relaxed">{currentQuestion.explanation}</p>
             </div>
           )}
           
-          <DialogFooter>
+          <DialogFooter className="justify-center mt-8">
             <Button
               onClick={handleNextQuestion}
-              className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary"
+              className="bg-millionaire-gold hover:bg-yellow-500 text-millionaire-primary text-xl px-8 py-4"
             >
               {gameOver ? "See Results" : "Continue"}
             </Button>
