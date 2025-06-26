@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Question as QuestionType, DEFAULT_GAME_SETTINGS, GameSettings, POINTS_VALUES, MILESTONE_VALUES, formatMoney, getGuaranteedMoney, shuffleOptions, Team, GameAction, addGameAction, undoLastAction, getQuestionConfig } from "@/utils/gameUtils";
 import { soundManager } from "@/utils/sound/SoundManager";
@@ -830,7 +829,7 @@ const GameScreen = ({
       
       {/* Decision Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-millionaire-primary border-millionaire-accent max-w-[90vw] max-h-[90vh] w-full h-full overflow-y-auto">
+        <DialogContent className="bg-millionaire-primary border-millionaire-accent max-w-2xl overflow-y-auto">
           <DialogHeader className="text-center">
             <DialogTitle className="text-millionaire-gold text-[40px] mb-4">{gameOver ? "Game Over" : "Correct!"}</DialogTitle>
             <DialogDescription className="text-millionaire-light text-3xl whitespace-pre-line leading-relaxed text-center">
